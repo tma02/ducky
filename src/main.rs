@@ -39,7 +39,7 @@ fn main() {
         Err(e) => {
             println!("[{TAG}] Failed reading config.toml, using defaults. error = {e}");
             Config::default()
-        },
+        }
     };
     println!("[{TAG}] Using config: config = {config:?}");
 
