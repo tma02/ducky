@@ -297,7 +297,7 @@ impl ActorManager {
         self.actors_by_id.get_mut(id)
     }
 
-    /// Updates an actor's position, rotation, and zone.
+    /// Updates an actor's position and rotation.
     pub fn update_host_actor(
         &mut self,
         sender_p2p_packet: &Sender<OutgoingP2pPacketRequest>,
