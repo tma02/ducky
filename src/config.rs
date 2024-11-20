@@ -1,4 +1,6 @@
-#[derive(serde::Deserialize)]
+use serde::Deserialize;
+
+#[derive(Debug, Deserialize)]
 pub struct Config {
     pub name: String,
     pub game_version: String,

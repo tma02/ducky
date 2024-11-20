@@ -2,4 +2,4 @@ name = "A Ducky Server"
 game_version = "1.1"
 max_players = 25
 code_only = true
-banlist = []
+ban_list = []

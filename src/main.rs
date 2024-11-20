@@ -34,10 +34,14 @@ fn main() {
     let server_epoch = Instant::now();
     println!("(o< (o< (o< (o< (o<\n<_) <_) <_) <_) <_)");
 
-    let config = read_config().unwrap_or({
-        println!("[{TAG}] Failed reading config.toml, using defaults.");
-        Config::default()
-    });
+    let config = match read_config() {
+        Ok(config) => config,
+        Err(e) => {
+            println!("[{TAG}] Failed reading config.toml, using defaults. error = {e}");
+            Config::default()
+        },
+    };
+    println!("[{TAG}] Using config: config = {config:?}");
 
     let client = init_steam_client();
     let (sender_p2p_request, receiver_p2p_request) = mpsc::channel();
@@ -108,7 +112,7 @@ fn main() {
 }
 
 fn read_config() -> io::Result<Config> {
-    toml::from_str(&fs::read_to_string("./config.toml")?)
+    toml::from_str(&fs::read_to_string("config.toml")?)
         .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e.to_string()))
 }
 
@@ -168,12 +172,15 @@ fn set_lobby_data(lobby_id: LobbyId, matchmaking: &Matchmaking<ClientManager>, c
         TAG,
         lobby_id.raw()
     );
+    let lobby_code = lobby_code();
+    println!("[{}] Lobby code: {}", TAG, lobby_code);
+
     // Always joinable
     matchmaking.set_lobby_joinable(lobby_id, true);
     matchmaking.set_lobby_data(lobby_id, "lobby_name", &config.name);
     matchmaking.set_lobby_data(lobby_id, "ref", "webfishing_gamelobby");
     matchmaking.set_lobby_data(lobby_id, "version", &config.game_version);
-    matchmaking.set_lobby_data(lobby_id, "code", &lobby_code());
+    matchmaking.set_lobby_data(lobby_id, "code", &lobby_code);
     matchmaking.set_lobby_data(
         lobby_id,
         "type",
