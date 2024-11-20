@@ -1,15 +1,18 @@
 use std::{
+    fs, io,
     sync::mpsc::{self, Sender},
     thread,
     time::{Duration, Instant},
 };
 
+use config::Config;
 use game::Game;
 use packet::{
     on_receive_packet, on_send_packet,
     util::{build_force_disconnect_player_packet, build_handshake_packet},
     OutgoingP2pPacketRequest, P2pChannel, P2pPacketTarget,
 };
+use random::lobby_code;
 use server::Server;
 use steamworks::{
     ChatMemberStateChange, Client, ClientManager, LobbyChatUpdate, LobbyId, LobbyType, Matchmaking,
@@ -17,6 +20,7 @@ use steamworks::{
 };
 
 mod command;
+mod config;
 mod game;
 mod packet;
 mod random;
@@ -26,30 +30,36 @@ static TAG: &str = "ducky";
 static WF_APP_ID: u32 = 3146520;
 static TICK_MS: u128 = 30;
 
-// TODO: These should be user configurable. Also think about supporting multiple lobbies.
-static WF_APP_VERSION: &str = "1.1";
-static MAX_PLAYERS: u32 = 50;
-static CODE_ONLY: bool = true;
-static CODE: &str = "LUE746";
-static LOBBY_NAME: &str = "Experimental Dedicated Server (US West)";
-
 fn main() {
     let server_epoch = Instant::now();
     println!("(o< (o< (o< (o< (o<\n<_) <_) <_) <_) <_)");
+
+    let config = read_config().unwrap_or({
+        println!("[{TAG}] Failed reading config.toml, using defaults.");
+        Config::default()
+    });
+
     let client = init_steam_client();
     let (sender_p2p_request, receiver_p2p_request) = mpsc::channel();
     init_steam_networking(&client, sender_p2p_request);
 
     let (sender_create_lobby, receiver_create_lobby) = mpsc::channel();
     let (sender_lobby_chat_update, receiver_lobby_chat_update) = mpsc::channel();
-    init_lobby(&client, sender_create_lobby, sender_lobby_chat_update);
+    init_lobby(
+        &client,
+        &config,
+        sender_create_lobby,
+        sender_lobby_chat_update,
+    );
 
     let (sender_p2p_packet, receiver_p2p_packet) = mpsc::channel::<OutgoingP2pPacketRequest>();
     let matchmaking = client.matchmaking();
     let networking = client.networking();
     let mut server = Server::new(client, sender_p2p_packet);
-    server.insert_ban_list(76561199220832861); // grincher
-    server.insert_ban_list(76561199801387970); // fman_122
+    config
+        .ban_list
+        .iter()
+        .for_each(|id| server.insert_ban_list(*id));
 
     let mut game = Game::new();
     game.on_ready(&mut server);
@@ -60,7 +70,7 @@ fn main() {
         if let Ok(new_lobby_id) = receiver_create_lobby.try_recv() {
             // On lobby created
             server.set_lobby_id(new_lobby_id);
-            set_lobby_data(new_lobby_id, &matchmaking);
+            set_lobby_data(new_lobby_id, &matchmaking, &config);
         }
 
         if let Ok(update) = receiver_lobby_chat_update.try_recv() {
@@ -97,6 +107,11 @@ fn main() {
     }
 }
 
+fn read_config() -> io::Result<Config> {
+    toml::from_str(&fs::read_to_string("./config.toml")?)
+        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e.to_string()))
+}
+
 fn init_steam_client() -> Client {
     println!("[{}] Initializing Steam...", TAG);
 
@@ -118,6 +133,7 @@ fn init_steam_networking(client: &Client, sender: Sender<SteamId>) {
 
 fn init_lobby(
     client: &Client,
+    config: &Config,
     sender_create_lobby: Sender<LobbyId>,
     sender_lobby_chat_update: Sender<LobbyChatUpdate>,
 ) {
@@ -125,24 +141,28 @@ fn init_lobby(
 
     client
         .matchmaking()
-        .create_lobby(LobbyType::Public, MAX_PLAYERS, move |result| match result {
-            Ok(lobby_id) => {
-                sender_create_lobby.send(lobby_id).unwrap();
-                println!(
-                    "[{}] Steam lobby created: lobby_id = {}",
-                    TAG,
-                    lobby_id.raw()
-                )
-            }
-            Err(err) => panic!("[{}] Failed to create lobby: {}", TAG, err),
-        });
+        .create_lobby(
+            LobbyType::Public,
+            config.max_players,
+            move |result| match result {
+                Ok(lobby_id) => {
+                    sender_create_lobby.send(lobby_id).unwrap();
+                    println!(
+                        "[{}] Steam lobby created: lobby_id = {}",
+                        TAG,
+                        lobby_id.raw()
+                    )
+                }
+                Err(err) => panic!("[{}] Failed to create lobby: {}", TAG, err),
+            },
+        );
 
     client.register_callback(move |update: LobbyChatUpdate| {
         sender_lobby_chat_update.send(update).unwrap();
     });
 }
 
-fn set_lobby_data(lobby_id: LobbyId, matchmaking: &Matchmaking<ClientManager>) {
+fn set_lobby_data(lobby_id: LobbyId, matchmaking: &Matchmaking<ClientManager>, config: &Config) {
     println!(
         "[{}] Setting lobby fields: lobby_id = {}",
         TAG,
@@ -150,20 +170,37 @@ fn set_lobby_data(lobby_id: LobbyId, matchmaking: &Matchmaking<ClientManager>) {
     );
     // Always joinable
     matchmaking.set_lobby_joinable(lobby_id, true);
-    matchmaking.set_lobby_data(lobby_id, "lobby_name", LOBBY_NAME);
+    matchmaking.set_lobby_data(lobby_id, "lobby_name", &config.name);
     matchmaking.set_lobby_data(lobby_id, "ref", "webfishing_gamelobby");
-    matchmaking.set_lobby_data(lobby_id, "version", WF_APP_VERSION);
-    matchmaking.set_lobby_data(lobby_id, "code", CODE);
+    matchmaking.set_lobby_data(lobby_id, "version", &config.game_version);
+    matchmaking.set_lobby_data(lobby_id, "code", &lobby_code());
     matchmaking.set_lobby_data(
         lobby_id,
         "type",
-        if CODE_ONLY { "code_only" } else { "public" },
+        if config.code_only {
+            "code_only"
+        } else {
+            "public"
+        },
     );
-    matchmaking.set_lobby_data(lobby_id, "public", if CODE_ONLY { "false" } else { "true" });
+    matchmaking.set_lobby_data(
+        lobby_id,
+        "public",
+        if config.code_only { "false" } else { "true" },
+    );
     // This is a CSV of SteamIDs
-    matchmaking.set_lobby_data(lobby_id, "banned_players", "");
+    matchmaking.set_lobby_data(
+        lobby_id,
+        "banned_players",
+        &config
+            .ban_list
+            .iter()
+            .map(|id| id.to_string())
+            .collect::<Vec<String>>()
+            .join(","),
+    );
     matchmaking.set_lobby_data(lobby_id, "age_limit", "false");
-    matchmaking.set_lobby_data(lobby_id, "cap", MAX_PLAYERS.to_string().as_str());
+    matchmaking.set_lobby_data(lobby_id, "cap", config.max_players.to_string().as_str());
     // TODO: randomize this between 0<=20
     matchmaking.set_lobby_data(lobby_id, "server_browser_value", "0");
 }
@@ -232,7 +269,10 @@ fn on_p2p_session_request(context: &Server, steam_id: SteamId) {
         TAG,
         steam_id.raw()
     );
-    context.steam_client.networking().accept_p2p_session(steam_id);
+    context
+        .steam_client
+        .networking()
+        .accept_p2p_session(steam_id);
 
     // Send the handshake
     context
