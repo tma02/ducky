@@ -1,14 +1,18 @@
 use std::{collections::HashMap, sync::LazyLock};
 
-use steamworks::SteamId;
+use steamworks::{SendType, SteamId};
 
 use crate::{
-    game::Game, packet::{
-        util::validate_dict_field_types,
+    game::Game,
+    packet::{
+        util::{build_actor_request_packet, validate_dict_field_types},
         variant::{Dictionary, VariantType, Vector3},
-    }, Server
+        OutgoingP2pPacketRequest, P2pChannel, P2pPacketTarget,
+    },
+    Server,
 };
 
+static TAG: &str = "actor_update";
 static PACKET_SCHEMA: LazyLock<HashMap<String, VariantType>> = LazyLock::new(|| {
     HashMap::from([
         ("actor_id".to_string(), VariantType::Int),
@@ -17,10 +21,10 @@ static PACKET_SCHEMA: LazyLock<HashMap<String, VariantType>> = LazyLock::new(|| 
     ])
 });
 
-pub fn handle(_server: &mut Server, game: &mut Game, steam_id: SteamId, packet: Dictionary) {
+pub fn handle(server: &mut Server, game: &mut Game, steam_id: SteamId, packet: Dictionary) {
     if !validate_dict_field_types(&packet, &PACKET_SCHEMA) {
         println!(
-            "[] Ignoring invalid actor_update packet: steam_id = {} packet = {:?}",
+            "[{TAG}] Ignoring invalid actor_update packet: steam_id = {} packet = {:?}",
             steam_id.raw(),
             packet
         );
@@ -30,7 +34,7 @@ pub fn handle(_server: &mut Server, game: &mut Game, steam_id: SteamId, packet: 
     if let Some(actor) = game.actor_manager.get_actor_mut(&actor_id) {
         if actor.creator_id != steam_id {
             println!(
-                "[] Ignoring actor_update packet from {} for actor {} they do not own",
+                "[{TAG}] Ignoring actor_update packet from {} for actor {} they do not own",
                 steam_id.raw(),
                 actor_id
             );
@@ -45,9 +49,14 @@ pub fn handle(_server: &mut Server, game: &mut Game, steam_id: SteamId, packet: 
         actor.rotation.y = rot.y;
         actor.rotation.z = rot.z;
     } else {
-        // TODO: Send despawn if we own the actor, otherwise send request_actors.
+        let _ = server.sender_p2p_packet.send(OutgoingP2pPacketRequest {
+            data: build_actor_request_packet(steam_id),
+            target: P2pPacketTarget::SteamId(steam_id),
+            channel: P2pChannel::GameState,
+            send_type: SendType::Reliable,
+        });
         println!(
-            "[] Ignoring actor_update packet from {} for non-existent actor {}",
+            "[{TAG}] Ignoring actor_update packet from {} for non-existent actor {}",
             steam_id.raw(),
             actor_id
         );

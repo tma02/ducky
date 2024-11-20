@@ -130,3 +130,12 @@ pub fn build_actor_action_packet(actor: &Actor, action: &str, params: Array) -> 
 
     encode_variant(VariantValue::Dictionary(packet))
 }
+
+pub fn build_actor_request_packet(user_id: SteamId) -> Vec<u8> {
+    let mut packet = Dictionary::new();
+    packet.insert("type".to_owned(), VariantValue::String("request_actors".to_owned()));
+    
+    packet.insert("user_id".to_owned(), VariantValue::String(user_id.raw().to_string()));
+
+    encode_variant(VariantValue::Dictionary(packet))
+}
