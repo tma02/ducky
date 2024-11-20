@@ -43,7 +43,7 @@ fn insert_actor_from_list(game: &mut Game, steam_id: &SteamId, actor_dict: &Dict
     }
     // Unwrap should be safe since we validated the fields above.
     let type_string: String = actor_dict
-        .get("actor_type")
+        .get("type")
         .unwrap()
         .clone()
         .try_into()

@@ -50,7 +50,7 @@ pub fn handle(server: &mut Server, game: &mut Game, steam_id: SteamId, packet: D
         actor.rotation.z = rot.z;
     } else {
         let _ = server.sender_p2p_packet.send(OutgoingP2pPacketRequest {
-            data: build_actor_request_packet(steam_id),
+            data: build_actor_request_packet(server.steam_client.user().steam_id()),
             target: P2pPacketTarget::SteamId(steam_id),
             channel: P2pChannel::GameState,
             send_type: SendType::Reliable,
