@@ -25,6 +25,7 @@ cargo run release
 
 Ducky will generate a random lobby code during startup. This code will be among the last lines
 printed during initialization.
+
 ```
 [ducky] Lobby code: ABC123
 ```
@@ -32,10 +33,11 @@ printed during initialization.
 ## Configuration
 
 Ducky can be configured through a `config.toml` file in the same directory as the executable. If
-this file is not found, or if there is a problem during parsing, Ducky will use its default
-configuration.
+this file is not found, or if there is a problem during parsing, Ducky will use its [default
+configuration](https://github.com/tma02/ducky/blob/master/src/config.rs#L12).
 
-### Default configuration
+### Example configuration
+
 ```toml
 name = "A Ducky Server"
 game_version = "1.1"
