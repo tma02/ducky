@@ -49,6 +49,8 @@ pub fn handle(server: &mut Server, game: &mut Game, steam_id: SteamId, packet: D
         actor.rotation.y = rot.y;
         actor.rotation.z = rot.z;
     } else {
+        // TODO: Queue this somehow, we don't need to send this for each actor_update if we know we
+        //  have already sent one in the last ?? ticks.
         let _ = server.sender_p2p_packet.send(OutgoingP2pPacketRequest {
             data: build_actor_request_packet(server.steam_client.user().steam_id()),
             target: P2pPacketTarget::SteamId(steam_id),
