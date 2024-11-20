@@ -6,6 +6,7 @@ use super::variant::{Dictionary, VariantValue};
 
 pub mod actor_action;
 pub mod actor_animation_update;
+pub mod actor_request_send;
 pub mod actor_update;
 pub mod handshake;
 pub mod instance_actor;
@@ -25,6 +26,9 @@ pub fn resolve_handler(
         VariantValue::String(str) if str == "actor_action" => Some(actor_action::handle),
         VariantValue::String(str) if str == "actor_animation_update" => {
             Some(actor_animation_update::handle)
+        }
+        VariantValue::String(str) if str == "actor_request_send" => {
+            Some(actor_request_send::handle)
         }
         VariantValue::String(str) if str == "actor_update" => Some(actor_update::handle),
         VariantValue::String(str) if str == "handshake" => Some(handshake::handle),
