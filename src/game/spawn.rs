@@ -202,8 +202,9 @@ impl SpawnManager {
 
         let spawn_lifetime = *SPAWN_LIFETIMES.get(&actor_type).unwrap();
         if spawn_lifetime < Duration::MAX {
-            self.spawn_timeouts
-                .insert(id, Instant::now().checked_add(spawn_lifetime).unwrap());
+            Instant::now()
+                .checked_add(spawn_lifetime)
+                .map(|i| self.spawn_timeouts.insert(id, i));
         }
     }
 
@@ -446,8 +447,9 @@ impl SpawnManager {
 
         let spawn_lifetime = *SPAWN_LIFETIMES.get(&actor_type).unwrap();
         if spawn_lifetime < Duration::MAX {
-            self.spawn_timeouts
-                .insert(id, Instant::now().checked_add(spawn_lifetime).unwrap());
+            Instant::now()
+                .checked_add(spawn_lifetime)
+                .map(|i| self.spawn_timeouts.insert(id, i));
         }
     }
 
