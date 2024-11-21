@@ -12,7 +12,7 @@ pub fn handle(server: &mut Server, _game: &mut Game, steam_id: SteamId, _packet:
     server
         .sender_p2p_packet
         .send(OutgoingP2pPacketRequest {
-            data: build_message_packet("This is an experimental dedicated server."),
+            data: build_message_packet(&server.motd),
             target: P2pPacketTarget::SteamId(steam_id),
             channel: P2pChannel::GameState,
             send_type: SendType::Reliable,

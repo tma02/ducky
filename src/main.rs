@@ -59,7 +59,7 @@ fn main() {
     let (sender_p2p_packet, receiver_p2p_packet) = mpsc::channel::<OutgoingP2pPacketRequest>();
     let matchmaking = client.matchmaking();
     let networking = client.networking();
-    let mut server = Server::new(client, sender_p2p_packet);
+    let mut server = Server::new(client, sender_p2p_packet, config.motd.clone());
     config
         .ban_list
         .iter()

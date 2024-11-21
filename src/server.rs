@@ -17,15 +17,21 @@ pub struct Server {
     // TODO: Holding ban_list here means we can't have per-lobby ban lists.
     /// A list of banned SteamIds as raw u64.
     pub ban_list: HashSet<u64>,
+    pub motd: String,
 }
 
 impl Server {
-    pub fn new(client: Client, sender_p2p_packet: Sender<OutgoingP2pPacketRequest>) -> Self {
+    pub fn new(
+        client: Client,
+        sender_p2p_packet: Sender<OutgoingP2pPacketRequest>,
+        motd: String,
+    ) -> Self {
         Self {
             steam_client: client,
             sender_p2p_packet,
             lobby_id: None,
             ban_list: HashSet::new(),
+            motd,
         }
     }
 
