@@ -128,8 +128,8 @@ impl SpawnManager {
         if let Some(alien_cooldown) = self.alien_cooldown.checked_sub(1) {
             self.alien_cooldown = alien_cooldown;
         }
-        if godot_randf() < 0.01
-            && godot_randf() < 0.4
+        // randf() < 0.01 and randf() < 0.4
+        if godot_randf() < 0.004
             && actor_manager
                 .get_actors_by_type(&ActorType::FishSpawnAlien)
                 .len()
@@ -143,13 +143,12 @@ impl SpawnManager {
         if godot_randf() < self.rain_chance && godot_randf() < 0.12 {
             actor_type = ActorType::Raincloud;
             self.rain_chance = 0.0;
-        } else {
-            if godot_randf() < 0.75 {
-                self.rain_chance += 0.001;
-            }
+        } else if godot_randf() < 0.75 {
+            self.rain_chance += 0.001;
         }
 
-        if godot_randf() < 0.01 && godot_randf() < 0.25 {
+        // randf() < 0.01 and randf() < 0.25
+        if godot_randf() < 0.0025 {
             actor_type = ActorType::VoidPortal;
         }
 
