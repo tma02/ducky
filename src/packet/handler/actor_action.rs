@@ -8,15 +8,15 @@ use crate::{
 
 static TAG: &str = "actor_action";
 
-pub fn handle(server: &mut Server, game: &mut Game, steam_id: SteamId, packet: Dictionary) {
+pub fn handle(server: &mut Server, game: &mut Game, steam_id: SteamId, mut packet: Dictionary) {
     let (
         Some(VariantValue::String(action)),
         Some(VariantValue::Int(actor_id)),
         Some(VariantValue::Array(params)),
     ) = (
-        packet.get("action"),
-        packet.get("actor_id"),
-        packet.get("params"),
+        packet.remove("action"),
+        packet.remove("actor_id"),
+        packet.remove("params"),
     )
     else {
         println!("[{TAG}] Ignoring invalid actor_action packet: packet = {packet:?}");
@@ -35,7 +35,7 @@ pub fn handle(server: &mut Server, game: &mut Game, steam_id: SteamId, packet: D
 
 fn resolve_action_handler(
     action: &str,
-) -> Option<fn(&mut Server, &mut Game, SteamId, &i64, &Array)> {
+) -> Option<fn(&mut Server, &mut Game, SteamId, i64, Array)> {
     // A limitation of this approach is that we can't handle actions that have the same name but
     // belong to different actor classes.
     match action {
@@ -55,8 +55,8 @@ fn no_op_action(
     _server: &mut Server,
     _game: &mut Game,
     _steam_id: SteamId,
-    _actor_id: &i64,
-    _params: &Array,
+    _actor_id: i64,
+    _params: Array,
 ) {
 }
 
@@ -64,8 +64,8 @@ fn wipe_actor(
     server: &mut Server,
     game: &mut Game,
     _steam_id: SteamId,
-    _actor_id: &i64,
-    params: &Array,
+    _actor_id: i64,
+    params: Array,
 ) {
     let Some(VariantValue::Int(target_id)) = params.get(0) else {
         println!("[{TAG}] Ignoring invalid _wipe_actor packet: params = {params:?}");
@@ -99,11 +99,11 @@ fn set_zone(
     _server: &mut Server,
     game: &mut Game,
     steam_id: SteamId,
-    actor_id: &i64,
-    params: &Array,
+    actor_id: i64,
+    mut params: Array,
 ) {
     let (Some(VariantValue::String(zone)), Some(VariantValue::Int(zone_owner))) =
-        (params.get(0), params.get(1))
+        (params.pop(), params.pop())
     else {
         println!("[{TAG}] Ignoring invalid _set_zone packet: params = {params:?}");
         return;
@@ -114,7 +114,7 @@ fn set_zone(
     println!("[{TAG}] set_zone: id = {actor_id}, zone = {zone}, zone_owner = {zone_owner}");
 
     let owned_by_steam_id = actor_manager
-        .get_actor(actor_id)
+        .get_actor(&actor_id)
         .map(|a| a.creator_id == steam_id)
         .unwrap_or(false);
     if !owned_by_steam_id {
@@ -124,7 +124,7 @@ fn set_zone(
         );
         return;
     }
-    let Some(_) = actor_manager.set_actor_zone(actor_id, zone.clone(), *zone_owner) else {
+    let Some(_) = actor_manager.set_actor_zone(&actor_id, zone, zone_owner) else {
         println!("[{TAG}] Failed _set_zone packet: params = {params:?}");
         return;
     };
