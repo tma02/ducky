@@ -9,7 +9,7 @@ use config::Config;
 use game::Game;
 use packet::{
     on_receive_packet, on_send_packet,
-    util::{build_force_disconnect_player_packet, build_handshake_packet},
+    util::{build_force_disconnect_player_packet, build_handshake_packet, send_variant_p2p},
     OutgoingP2pPacketRequest, P2pChannel, P2pPacketTarget,
 };
 use random::lobby_code;
@@ -244,10 +244,10 @@ fn on_lobby_chat_update(context: &Server, update: LobbyChatUpdate) {
     }
 }
 
-fn on_p2p_session_request(context: &Server, steam_id: SteamId) {
+fn on_p2p_session_request(server: &Server, steam_id: SteamId) {
     println!("[{}] P2P request: steam_id = {}", TAG, steam_id.raw());
     // Check for reasons to not accept the request.
-    if context.banned_steam_id(&steam_id) {
+    if server.banned_steam_id(&steam_id) {
         println!(
             "[{}] Blocking P2P request from user on ban list: steam_id = {}",
             TAG,
@@ -259,15 +259,13 @@ fn on_p2p_session_request(context: &Server, steam_id: SteamId) {
             steam_id.raw()
         );
 
-        context
-            .sender_p2p_packet
-            .send(OutgoingP2pPacketRequest {
-                data: build_force_disconnect_player_packet(&steam_id.raw()),
-                target: P2pPacketTarget::All,
-                channel: P2pChannel::GameState,
-                send_type: SendType::Reliable,
-            })
-            .unwrap();
+        send_variant_p2p(
+            &server.sender_p2p_packet,
+            build_force_disconnect_player_packet(&steam_id.raw()),
+            P2pPacketTarget::All,
+            P2pChannel::GameState,
+            SendType::Reliable,
+        );
         return;
     }
     // Checks have passed, let's accept the request
@@ -276,19 +274,17 @@ fn on_p2p_session_request(context: &Server, steam_id: SteamId) {
         TAG,
         steam_id.raw()
     );
-    context
+    server
         .steam_client
         .networking()
         .accept_p2p_session(steam_id);
 
     // Send the handshake
-    context
-        .sender_p2p_packet
-        .send(OutgoingP2pPacketRequest {
-            data: build_handshake_packet(context.steam_client.user().steam_id()),
-            target: P2pPacketTarget::All,
-            channel: P2pChannel::GameState,
-            send_type: SendType::Reliable,
-        })
-        .unwrap();
+    send_variant_p2p(
+        &server.sender_p2p_packet,
+        build_handshake_packet(server.steam_client.user().steam_id()),
+        P2pPacketTarget::All,
+        P2pChannel::GameState,
+        SendType::Reliable,
+    );
 }

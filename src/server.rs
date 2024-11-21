@@ -6,7 +6,8 @@ use std::{
 use steamworks::{Client, LobbyId, SendType, SteamId};
 
 use crate::packet::{
-    util::build_message_packet, OutgoingP2pPacketRequest, P2pChannel, P2pPacketTarget,
+    util::{build_message_packet, send_variant_p2p},
+    OutgoingP2pPacketRequest, P2pChannel, P2pPacketTarget,
 };
 
 pub struct Server {
@@ -48,16 +49,13 @@ impl Server {
     }
 
     // This is a utility function for sending a packet, does this belong here?
-    pub fn send_chat_message(
-        &self,
-        steam_id: &SteamId,
-        message: &str,
-    ) -> Result<(), SendError<OutgoingP2pPacketRequest>> {
-        self.sender_p2p_packet.send(OutgoingP2pPacketRequest {
-            data: build_message_packet(message),
-            target: P2pPacketTarget::SteamId(steam_id.clone()),
-            channel: P2pChannel::GameState,
-            send_type: SendType::Reliable,
-        })
+    pub fn send_chat_message(&self, steam_id: &SteamId, message: &str) {
+        send_variant_p2p(
+            &self.sender_p2p_packet,
+            build_message_packet(message),
+            P2pPacketTarget::SteamId(steam_id.clone()),
+            P2pChannel::GameState,
+            SendType::Reliable,
+        );
     }
 }

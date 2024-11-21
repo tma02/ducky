@@ -3,7 +3,10 @@ use std::{collections::HashMap, sync::mpsc::Sender};
 use steamworks::{SendType, SteamId};
 
 use crate::packet::{
-    util::{build_actor_action_packet, build_actor_update_packet, build_instance_actor_packet},
+    util::{
+        build_actor_action_packet, build_actor_update_packet, build_instance_actor_packet,
+        send_variant_p2p,
+    },
     variant::{Dictionary, VariantValue, Vector3},
     OutgoingP2pPacketRequest, P2pChannel, P2pPacketTarget,
 };
@@ -234,19 +237,21 @@ impl ActorManager {
         }
 
         self.insert_actor(actor.clone());
-        let _ = sender_p2p_packet.send(OutgoingP2pPacketRequest {
-            data: build_instance_actor_packet(&actor),
-            target: P2pPacketTarget::All,
-            channel: P2pChannel::GameState,
-            send_type: SendType::Reliable,
-        });
+        send_variant_p2p(
+            &sender_p2p_packet,
+            build_instance_actor_packet(&actor),
+            P2pPacketTarget::All,
+            P2pChannel::GameState,
+            SendType::Reliable,
+        );
         // Without `actor_update` the actor tends to stay at the world origin.
-        let _ = sender_p2p_packet.send(OutgoingP2pPacketRequest {
-            data: build_actor_update_packet(&actor),
-            target: P2pPacketTarget::All,
-            channel: P2pChannel::ActorUpdate,
-            send_type: SendType::Reliable,
-        });
+        send_variant_p2p(
+            &sender_p2p_packet,
+            build_actor_update_packet(&actor),
+            P2pPacketTarget::All,
+            P2pChannel::GameState,
+            SendType::Reliable,
+        );
 
         true
     }
@@ -262,12 +267,13 @@ impl ActorManager {
             return false;
         };
 
-        let _ = sender_p2p_packet.send(OutgoingP2pPacketRequest {
-            data: build_actor_action_packet(&actor, "queue_free", vec![]),
-            target: P2pPacketTarget::All,
-            channel: P2pChannel::ActorAction,
-            send_type: SendType::Reliable,
-        });
+        send_variant_p2p(
+            &sender_p2p_packet,
+            build_actor_action_packet(&actor, "queue_free", vec![]),
+            P2pPacketTarget::All,
+            P2pChannel::ActorAction,
+            SendType::Reliable,
+        );
         self.remove_actor(actor_id);
 
         true
@@ -316,12 +322,13 @@ impl ActorManager {
         actor.rotation.y = rotation.y;
         actor.rotation.z = rotation.z;
 
-        let _ = sender_p2p_packet.send(OutgoingP2pPacketRequest {
-            data: build_actor_update_packet(actor),
-            target: P2pPacketTarget::All,
-            channel: P2pChannel::ActorUpdate,
-            send_type: SendType::Reliable,
-        });
+        send_variant_p2p(
+            &sender_p2p_packet,
+            build_actor_update_packet(actor),
+            P2pPacketTarget::All,
+            P2pChannel::ActorUpdate,
+            SendType::Reliable,
+        );
 
         Some(actor)
     }
@@ -354,7 +361,7 @@ impl ActorManager {
     pub fn get_actors_by_creator(&self, creator_id: &SteamId) -> Option<Vec<&Actor>> {
         self.actor_ids_by_creator.get(creator_id).map(|ids| {
             ids.iter()
-                .map(|id| self.actors_by_id.get(id).unwrap())
+                .filter_map(|id| self.actors_by_id.get(id))
                 .collect()
         })
     }

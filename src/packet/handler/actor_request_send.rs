@@ -41,11 +41,15 @@ fn insert_actor_from_list(game: &mut Game, steam_id: &SteamId, actor_dict: &Dict
         println!("[{TAG}] Invalid actor: dict = {actor_dict:?}");
         return;
     }
-    // Unwrap should be safe since we validated the fields above.
-    let type_string: String = actor_dict.get("type").unwrap().clone().try_into().unwrap();
+    let (Some(VariantValue::String(type_string)), Some(VariantValue::Int(id))) =
+        (actor_dict.get("type"), actor_dict.get("id"))
+    else {
+        println!("[{TAG}] Invalid actor: dict = {actor_dict:?}");
+        return;
+    };
     let actor_type = ActorType::from(type_string.as_str());
     let actor = Actor {
-        id: actor_dict.get("id").unwrap().clone().try_into().unwrap(),
+        id: *id,
         creator_id: steam_id.clone(),
         actor_type: actor_type,
         zone: "".to_owned(),

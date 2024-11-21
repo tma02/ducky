@@ -14,6 +14,8 @@ pub mod handler;
 pub mod util;
 pub mod variant;
 
+static TAG: &str = "packet";
+
 pub enum P2pPacketTarget {
     /// A specific Steam user.
     SteamId(SteamId),
@@ -64,7 +66,10 @@ pub fn on_receive_packet(
     // TODO: check if sender is banned
     let mut d: GzDecoder<&[u8]> = GzDecoder::new(buffer_vec.as_slice());
     let mut decompressed_buf: Vec<u8> = vec![];
-    d.read_to_end(&mut decompressed_buf).unwrap();
+    if let Err(e) = d.read_to_end(&mut decompressed_buf) {
+        println!("[{TAG}] Error decompressing packet: {e}");
+        return;
+    }
     let var = decode_variant(&decompressed_buf);
     if let Ok(VariantValue::Dictionary(dict)) = var {
         if let Some(handler) = resolve_handler(&dict) {
@@ -82,7 +87,10 @@ pub fn on_send_packet(server: &Server, outgoing: OutgoingP2pPacketRequest) {
     let channel_i32 = outgoing.channel as i32;
     let mut e: GzEncoder<&[u8]> = GzEncoder::new(outgoing.data.as_slice(), Compression::fast());
     let mut buffer = Vec::new();
-    e.read_to_end(&mut buffer).unwrap();
+    if let Err(e) = e.read_to_end(&mut buffer) {
+        println!("[{TAG}] Error compressing packet: {e}");
+        return;
+    }
 
     if let P2pPacketTarget::SteamId(steam_id) = outgoing.target {
         server.steam_client.networking().send_p2p_packet_on_channel(
@@ -108,7 +116,8 @@ pub fn on_send_packet(server: &Server, outgoing: OutgoingP2pPacketRequest) {
             }
         } else if let P2pPacketTarget::Peers(ignore_steam_id) = outgoing.target {
             for steam_id in server.steam_client.matchmaking().lobby_members(lobby_id) {
-                if steam_id == server.steam_client.user().steam_id() || steam_id == ignore_steam_id {
+                if steam_id == server.steam_client.user().steam_id() || steam_id == ignore_steam_id
+                {
                     continue;
                 }
                 server.steam_client.networking().send_p2p_packet_on_channel(

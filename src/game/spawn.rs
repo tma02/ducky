@@ -200,7 +200,7 @@ impl SpawnManager {
             .or_insert(vec![])
             .push(id);
 
-        let spawn_lifetime = *SPAWN_LIFETIMES.get(&actor_type).unwrap();
+        let spawn_lifetime = *SPAWN_LIFETIMES.get(&actor_type).unwrap_or(&Duration::MAX);
         if spawn_lifetime < Duration::MAX {
             Instant::now()
                 .checked_add(spawn_lifetime)
@@ -406,7 +406,7 @@ impl SpawnManager {
             .get(actor_type)
             .map(|v| v.len())
             .unwrap_or(0)
-            < *SPAWN_COUNT_LIMITS.get(actor_type).unwrap()
+            < *SPAWN_COUNT_LIMITS.get(actor_type).unwrap_or(&usize::MAX)
     }
 
     /// Returns a list of actor IDs that need to be despawned.
@@ -445,7 +445,7 @@ impl SpawnManager {
             .or_insert(vec![])
             .push(id);
 
-        let spawn_lifetime = *SPAWN_LIFETIMES.get(&actor_type).unwrap();
+        let spawn_lifetime = *SPAWN_LIFETIMES.get(&actor_type).unwrap_or(&Duration::MAX);
         if spawn_lifetime < Duration::MAX {
             Instant::now()
                 .checked_add(spawn_lifetime)

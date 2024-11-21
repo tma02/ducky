@@ -74,13 +74,13 @@ fn read_i64(cursor: &mut Cursor<&[u8]>) -> io::Result<i64> {
 
 fn read_f64(cursor: &mut Cursor<&[u8]>) -> io::Result<f64> {
     let mut buf = [0 as u8; 8];
-    cursor.read_exact(&mut buf).unwrap();
+    cursor.read_exact(&mut buf)?;
     Ok(f64::from_le_bytes(buf))
 }
 
 fn read_f32(cursor: &mut Cursor<&[u8]>) -> io::Result<f32> {
     let mut buf = [0 as u8; 4];
-    cursor.read_exact(&mut buf).unwrap();
+    cursor.read_exact(&mut buf)?;
     Ok(f32::from_le_bytes(buf))
 }
 

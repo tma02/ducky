@@ -1,11 +1,13 @@
 use steamworks::{SendType, SteamId};
 
 use crate::{
-    game::Game, packet::{
-        encode::encode_variant,
+    game::Game,
+    packet::{
+        util::send_variant_p2p,
         variant::{Dictionary, VariantValue},
-        OutgoingP2pPacketRequest, P2pChannel, P2pPacketTarget,
-    }, Server
+        P2pChannel, P2pPacketTarget,
+    },
+    Server,
 };
 
 pub fn handle(server: &mut Server, _game: &mut Game, steam_id: SteamId, _packet: Dictionary) {
@@ -16,13 +18,11 @@ pub fn handle(server: &mut Server, _game: &mut Game, steam_id: SteamId, _packet:
     );
     response.insert("list".to_owned(), VariantValue::Array(Vec::new()));
 
-    server
-        .sender_p2p_packet
-        .send(OutgoingP2pPacketRequest {
-            data: encode_variant(VariantValue::Dictionary(response)),
-            target: P2pPacketTarget::SteamId(steam_id),
-            channel: P2pChannel::GameState,
-            send_type: SendType::Reliable,
-        })
-        .unwrap();
+    send_variant_p2p(
+        &server.sender_p2p_packet,
+        VariantValue::Dictionary(response),
+        P2pPacketTarget::SteamId(steam_id),
+        P2pChannel::GameState,
+        SendType::Reliable,
+    );
 }
