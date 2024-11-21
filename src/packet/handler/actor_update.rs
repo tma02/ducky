@@ -1,13 +1,12 @@
 use std::{collections::HashMap, sync::LazyLock};
 
-use steamworks::{SendType, SteamId};
+use steamworks::SteamId;
 
 use crate::{
     game::Game,
     packet::{
-        util::{build_actor_request_packet, validate_dict_field_types},
+        util::validate_dict_field_types,
         variant::{Dictionary, VariantType, Vector3},
-        OutgoingP2pPacketRequest, P2pChannel, P2pPacketTarget,
     },
     Server,
 };
@@ -21,7 +20,7 @@ static PACKET_SCHEMA: LazyLock<HashMap<String, VariantType>> = LazyLock::new(|| 
     ])
 });
 
-pub fn handle(server: &mut Server, game: &mut Game, steam_id: SteamId, packet: Dictionary) {
+pub fn handle(_server: &mut Server, game: &mut Game, steam_id: SteamId, packet: Dictionary) {
     if !validate_dict_field_types(&packet, &PACKET_SCHEMA) {
         println!(
             "[{TAG}] Ignoring invalid actor_update packet: steam_id = {} packet = {:?}",
@@ -49,14 +48,7 @@ pub fn handle(server: &mut Server, game: &mut Game, steam_id: SteamId, packet: D
         actor.rotation.y = rot.y;
         actor.rotation.z = rot.z;
     } else {
-        // TODO: Queue this somehow, we don't need to send this for each actor_update if we know we
-        //  have already sent one in the last ?? ticks.
-        let _ = server.sender_p2p_packet.send(OutgoingP2pPacketRequest {
-            data: build_actor_request_packet(server.steam_client.user().steam_id()),
-            target: P2pPacketTarget::SteamId(steam_id),
-            channel: P2pChannel::GameState,
-            send_type: SendType::Reliable,
-        });
+        game.peer_manager.add_peer_need_update(steam_id);
         println!(
             "[{TAG}] Ignoring actor_update packet from {} for non-existent actor {}",
             steam_id.raw(),
