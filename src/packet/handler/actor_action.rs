@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use steamworks::SteamId;
 
 use crate::{
@@ -100,11 +102,11 @@ fn set_zone(
     game: &mut Game,
     steam_id: SteamId,
     actor_id: i64,
-    mut params: Array,
+    params: Array,
 ) {
-    // Params are ordered as [zone, zone_owner].
-    let (Some(VariantValue::Int(zone_owner)), Some(VariantValue::String(zone))) =
-        (params.pop(), params.pop())
+    let mut params = VecDeque::from(params);
+    let (Some(VariantValue::String(zone)), Some(VariantValue::Int(zone_owner))) =
+        (params.pop_front(), params.pop_front())
     else {
         println!("[{TAG}] Ignoring invalid _set_zone packet: params = {params:?}");
         return;
@@ -121,12 +123,12 @@ fn set_zone(
     if !owned_by_steam_id {
         // User doesn't own the target actor, we can ignore.
         println!(
-            "[{TAG}] Ignoring _set_zone packet for actor not owned by sender: params = {params:?}"
+            "[{TAG}] Ignoring _set_zone packet for actor not owned by sender: actor_id = {actor_id:?}"
         );
         return;
     }
     let Some(_) = actor_manager.set_actor_zone(&actor_id, zone, zone_owner) else {
-        println!("[{TAG}] Failed _set_zone packet: params = {params:?}");
+        println!("[{TAG}] Failed _set_zone packet: actor_id = {actor_id}");
         return;
     };
 }
