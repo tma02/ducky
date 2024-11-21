@@ -10,26 +10,6 @@ use super::{
     OutgoingP2pPacketRequest, P2pChannel, P2pPacketTarget,
 };
 
-/// Checks that the `dictionary` contains the fields and types specified in the `types_map`.
-pub fn validate_dict_field_types(
-    dictionary: &Dictionary,
-    types_map: &HashMap<String, VariantType>,
-) -> bool {
-    for (key, expected_type) in types_map {
-        if let Some(value) = dictionary.get(key) {
-            if !value.is_type_of(*expected_type) {
-                // Wrong type
-                return false;
-            }
-        } else {
-            // Missing field
-            return false;
-        }
-    }
-
-    true
-}
-
 /// Builds a `message` packet. This packet represents a chat message.
 pub fn build_message_packet(message: &str) -> VariantValue {
     let mut packet = Dictionary::new();

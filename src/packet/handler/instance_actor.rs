@@ -1,5 +1,3 @@
-use std::{collections::HashMap, sync::LazyLock};
-
 use steamworks::SteamId;
 
 use crate::{
@@ -7,40 +5,29 @@ use crate::{
         actor::{Actor, ActorType},
         Game,
     },
-    packet::{
-        util::validate_dict_field_types,
-        variant::{Dictionary, VariantType, VariantValue},
-    },
+    packet::variant::{Dictionary, VariantValue},
     Server,
 };
 
 static TAG: &str = "instance_actor";
-static PARAMS_SCHEMA: LazyLock<HashMap<String, VariantType>> = LazyLock::new(|| {
-    HashMap::from([
-        ("actor_id".to_string(), VariantType::Int),
-        ("actor_type".to_string(), VariantType::String),
-        ("creator_id".to_string(), VariantType::Int),
-        ("zone".to_string(), VariantType::String),
-        ("zone_owner".to_string(), VariantType::Int),
-        ("at".to_string(), VariantType::Vector3),
-        ("rot".to_string(), VariantType::Vector3),
-    ])
-});
 
 pub fn handle(_server: &mut Server, game: &mut Game, steam_id: SteamId, mut packet: Dictionary) {
     let Some(VariantValue::Dictionary(mut params)) = packet.remove("params") else {
         println!("[{TAG}] Missing params in instance_actor packet.");
         return;
     };
-
-    if !validate_dict_field_types(&params, &PARAMS_SCHEMA) {
-        println!(
-            "[{TAG}] Invalid params in instance_actor packet: steam_id = {} packet = {params:?}",
-            steam_id.raw(),
-        );
-        return;
+    /*
+    Params format:
+    {
+        actor_id: Int,
+        actor_type: String,
+        creator_id: Int,
+        zone: String,
+        zone_owner: Int,
+        at: Vector3,
+        rot: Vector3
     }
-
+     */
     let (
         Some(VariantValue::Int(actor_id)),
         Some(VariantValue::String(actor_type)),

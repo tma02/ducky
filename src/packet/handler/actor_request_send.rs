@@ -1,5 +1,3 @@
-use std::{collections::HashMap, sync::LazyLock};
-
 use steamworks::SteamId;
 
 use crate::{
@@ -7,21 +5,11 @@ use crate::{
         actor::{Actor, ActorType},
         Game,
     },
-    packet::{
-        util::validate_dict_field_types,
-        variant::{Dictionary, VariantType, VariantValue, Vector3},
-    },
+    packet::variant::{Dictionary, VariantValue, Vector3},
     Server,
 };
 
 static TAG: &str = "actor_request_send";
-static ACTOR_SCHEMA: LazyLock<HashMap<String, VariantType>> = LazyLock::new(|| {
-    HashMap::from([
-        ("id".to_string(), VariantType::Int),
-        ("type".to_string(), VariantType::String),
-        ("owner".to_string(), VariantType::Int),
-    ])
-});
 
 pub fn handle(_server: &mut Server, game: &mut Game, steam_id: SteamId, packet: Dictionary) {
     let Some(VariantValue::Array(list)) = packet.get("list") else {
@@ -37,10 +25,14 @@ pub fn handle(_server: &mut Server, game: &mut Game, steam_id: SteamId, packet: 
 }
 
 fn insert_actor_from_list(game: &mut Game, steam_id: &SteamId, actor_dict: &Dictionary) {
-    if !validate_dict_field_types(actor_dict, &ACTOR_SCHEMA) {
-        println!("[{TAG}] Invalid actor: dict = {actor_dict:?}");
-        return;
+    /*
+    Dictionary format:
+    {
+        id: Int,
+        type: String,
+        owner: Int,
     }
+    */
     let (Some(VariantValue::String(type_string)), Some(VariantValue::Int(id))) =
         (actor_dict.get("type"), actor_dict.get("id"))
     else {

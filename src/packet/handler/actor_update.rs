@@ -1,34 +1,22 @@
-use std::{collections::HashMap, sync::LazyLock};
-
 use steamworks::SteamId;
 
 use crate::{
     game::Game,
-    packet::{
-        util::validate_dict_field_types,
-        variant::{Dictionary, VariantType, VariantValue},
-    },
+    packet::variant::{Dictionary, VariantValue},
     Server,
 };
 
 static TAG: &str = "actor_update";
-static PACKET_SCHEMA: LazyLock<HashMap<String, VariantType>> = LazyLock::new(|| {
-    HashMap::from([
-        ("actor_id".to_string(), VariantType::Int),
-        ("pos".to_string(), VariantType::Vector3),
-        ("rot".to_string(), VariantType::Vector3),
-    ])
-});
 
 pub fn handle(_server: &mut Server, game: &mut Game, steam_id: SteamId, packet: Dictionary) {
-    if !validate_dict_field_types(&packet, &PACKET_SCHEMA) {
-        println!(
-            "[{TAG}] Ignoring invalid actor_update packet: steam_id = {} packet = {:?}",
-            steam_id.raw(),
-            packet
-        );
-        return;
+    /*
+    Packet format:
+    {
+        actor_id: Int,
+        pos: Vector3,
+        rot: Vector3,
     }
+    */
     let (
         Some(VariantValue::Int(actor_id)),
         Some(VariantValue::Vector3(pos)),
