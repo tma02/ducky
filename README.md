@@ -1,7 +1,7 @@
 # Ducky
 
 Ducky is an experimental "dedicated server" for WEBFISHING written in Rust. It is an emulation of
-the WEBFISHING game and networking logic from the perspective of a lobby host.
+the networking and game logic from the perspective of a WEBFISHING lobby host.
 
 ## Getting started
 
@@ -14,8 +14,9 @@ cargo install
 ### Running
 
 > [!NOTE]
-> Ducky requires a running Steam client signed-in with an account who owns WEBFISHING. This is
-> because WEBFISHING lobbies can only be created through Steam's matchmaking system.
+> Ducky requires a running Steam client signed-in with an account who owns WEBFISHING. You cannot
+> use the same Steam account for both Ducky and joining the hosted lobby. This is because WEBFISHING
+> lobbies can only be created through Steam's matchmaking system.
 
 ```bash
 cargo run release

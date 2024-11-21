@@ -16,6 +16,7 @@ use crate::{
 use super::actor::{Actor, ActorManager, ActorType};
 
 static TAG: &str = "game::spawn";
+// TODO: make these configurable
 static SPAWN_LIFETIMES: LazyLock<HashMap<ActorType, Duration>> = LazyLock::new(|| {
     let mut map = HashMap::new();
     // One physics tick is 1/60s
@@ -28,6 +29,7 @@ static SPAWN_LIFETIMES: LazyLock<HashMap<ActorType, Duration>> = LazyLock::new(|
 
     map
 });
+// TODO: make these configurable
 static SPAWN_COUNT_LIMITS: LazyLock<HashMap<ActorType, usize>> = LazyLock::new(|| {
     let mut map = HashMap::new();
     map.insert(ActorType::Raincloud, 2);
@@ -55,6 +57,7 @@ pub struct SpawnManager {
     rain_chance: f64,
 }
 
+// TODO: make these configurable
 fn next_host_spawn() -> Instant {
     Instant::now() + Duration::from_secs(10)
 }
