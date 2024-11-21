@@ -102,7 +102,8 @@ fn set_zone(
     actor_id: i64,
     mut params: Array,
 ) {
-    let (Some(VariantValue::String(zone)), Some(VariantValue::Int(zone_owner))) =
+    // Params are ordered as [zone, zone_owner].
+    let (Some(VariantValue::Int(zone_owner)), Some(VariantValue::String(zone))) =
         (params.pop(), params.pop())
     else {
         println!("[{TAG}] Ignoring invalid _set_zone packet: params = {params:?}");
