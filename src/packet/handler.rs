@@ -5,7 +5,6 @@ use crate::{game::Game, Server};
 use super::variant::{Dictionary, VariantValue};
 
 pub mod actor_action;
-pub mod actor_animation_update;
 pub mod actor_request_send;
 pub mod actor_update;
 pub mod handshake;
@@ -18,7 +17,7 @@ pub mod request_ping;
 /// Packet handlers are pure functions responsible for handling a single packet type. All packet
 /// handlers have the same function signature `fn(&mut Server, &mut Game, SteamId, Dictionary)`.
 /// This function returns the handler function for the given message root. This will return an empty
-/// Option if the message did not have a type field, or if no handler could be found for the message 
+/// Option if the message did not have a type field, or if no handler could be found for the message
 /// type.
 pub fn resolve_handler(
     root: &Dictionary,
@@ -27,9 +26,7 @@ pub fn resolve_handler(
     // TODO: Packet type registry? Not sure if needed since scope of packet types is known.
     match type_var {
         VariantValue::String(str) if str == "actor_action" => Some(actor_action::handle),
-        VariantValue::String(str) if str == "actor_animation_update" => {
-            Some(actor_animation_update::handle)
-        }
+        VariantValue::String(str) if str == "actor_animation_update" => Some(no_op_handler),
         VariantValue::String(str) if str == "actor_request_send" => {
             Some(actor_request_send::handle)
         }
@@ -44,3 +41,5 @@ pub fn resolve_handler(
         _ => None,
     }
 }
+
+fn no_op_handler(_: &mut Server, _: &mut Game, _: SteamId, _: Dictionary) {}
