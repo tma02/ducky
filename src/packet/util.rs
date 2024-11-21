@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::mpsc::Sender};
+use std::sync::mpsc::Sender;
 
 use steamworks::{SendType, SteamId};
 
@@ -6,7 +6,7 @@ use crate::game::actor::Actor;
 
 use super::{
     encode::encode_variant,
-    variant::{Array, Dictionary, VariantType, VariantValue, Vector3},
+    variant::{Array, Dictionary, VariantValue, Vector3},
     OutgoingP2pPacketRequest, P2pChannel, P2pPacketTarget,
 };
 
