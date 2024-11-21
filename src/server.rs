@@ -1,7 +1,4 @@
-use std::{
-    collections::HashSet,
-    sync::mpsc::{SendError, Sender},
-};
+use std::{collections::HashSet, sync::mpsc::Sender};
 
 use steamworks::{Client, LobbyId, SendType, SteamId};
 
