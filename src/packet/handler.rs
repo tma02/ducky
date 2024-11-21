@@ -15,8 +15,11 @@ pub mod new_player_join;
 pub mod request_actors;
 pub mod request_ping;
 
-/// Returns the handler function for the given message root. This will return an empty Option if the
-/// message did not have a type field, or if no handler could be found for the message type.
+/// Packet handlers are pure functions responsible for handling a single packet type. All packet
+/// handlers have the same function signature `fn(&mut Server, &mut Game, SteamId, Dictionary)`.
+/// This function returns the handler function for the given message root. This will return an empty
+/// Option if the message did not have a type field, or if no handler could be found for the message 
+/// type.
 pub fn resolve_handler(
     root: &Dictionary,
 ) -> Option<fn(&mut Server, &mut Game, SteamId, Dictionary)> {

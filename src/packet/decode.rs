@@ -7,6 +7,8 @@ use super::variant::*;
 
 static TAG: &str = "decode";
 
+// TODO: consider implementing serde::Serializer
+
 /// Decodes a u8 slice into a Variant.
 pub fn decode_variant(buffer: &[u8]) -> io::Result<VariantValue> {
     let mut cursor = Cursor::new(buffer);

@@ -15,7 +15,7 @@ use crate::{
 
 use super::actor::{Actor, ActorManager, ActorType};
 
-static TAG: &str = "spawn";
+static TAG: &str = "game::spawn";
 static SPAWN_LIFETIMES: LazyLock<HashMap<ActorType, Duration>> = LazyLock::new(|| {
     let mut map = HashMap::new();
     // One physics tick is 1/60s

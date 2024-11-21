@@ -42,12 +42,7 @@ fn insert_actor_from_list(game: &mut Game, steam_id: &SteamId, actor_dict: &Dict
         return;
     }
     // Unwrap should be safe since we validated the fields above.
-    let type_string: String = actor_dict
-        .get("type")
-        .unwrap()
-        .clone()
-        .try_into()
-        .unwrap();
+    let type_string: String = actor_dict.get("type").unwrap().clone().try_into().unwrap();
     let actor_type = ActorType::from(type_string.as_str());
     let actor = Actor {
         id: actor_dict.get("id").unwrap().clone().try_into().unwrap(),

@@ -8,6 +8,8 @@ use super::variant::VariantValue;
 use super::variant::Vector2;
 use super::variant::Vector3;
 
+// TODO: consider implementing serde::Deserializer
+
 pub fn encode_variant(value: VariantValue) -> Vec<u8> {
     let array = vec![];
     let mut cursor = Cursor::new(array);

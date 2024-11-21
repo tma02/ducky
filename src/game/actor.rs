@@ -337,6 +337,19 @@ impl ActorManager {
         None
     }
 
+    /// Sets the zone and zone_owner of the actor with the given ID. This does not perform any
+    /// checks or network broadcasts.
+    pub fn set_actor_zone(&mut self, id: &i64, zone: String, zone_owner: i64) -> Option<&Actor> {
+        if let Some(actor) = self.actors_by_id.get_mut(id) {
+            actor.zone = zone;
+            actor.zone_owner = zone_owner;
+
+            return Some(actor);
+        }
+
+        None
+    }
+
     /// Gets all actors created by the given SteamId.
     pub fn get_actors_by_creator(&self, creator_id: &SteamId) -> Option<Vec<&Actor>> {
         self.actor_ids_by_creator.get(creator_id).map(|ids| {
