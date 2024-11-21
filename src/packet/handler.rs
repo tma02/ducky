@@ -37,7 +37,6 @@ pub fn resolve_handler(
         VariantValue::String(str) if str == "new_player_join" => Some(new_player_join::handle),
         VariantValue::String(str) if str == "request_actors" => Some(request_actors::handle),
         VariantValue::String(str) if str == "request_ping" => Some(request_ping::handle),
-        // TODO: actor_action._set_zone sets the actor zone
         _ => None,
     }
 }
