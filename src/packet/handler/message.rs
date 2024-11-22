@@ -30,7 +30,7 @@ pub fn handle(server: &mut Server, game: &mut Game, steam_id: SteamId, packet: D
         let command_context = CommandContext {
             sender: steam_id,
             command,
-            args,
+            _args: args,
         };
         if let Some(handler) = resolve_handler(&command_context) {
             handler(server, game, command_context);
