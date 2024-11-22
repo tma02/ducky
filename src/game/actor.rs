@@ -204,7 +204,6 @@ pub struct ActorManager {
     actors_by_id: HashMap<i64, Actor>,
     actor_ids_by_creator: HashMap<SteamId, Vec<i64>>,
     player_actor_ids_by_creator: HashMap<SteamId, i64>,
-    ticks_sent_since_last_update: u32,
 }
 
 impl ActorManager {
@@ -213,42 +212,37 @@ impl ActorManager {
             actors_by_id: HashMap::new(),
             actor_ids_by_creator: HashMap::new(),
             player_actor_ids_by_creator: HashMap::new(),
-            ticks_sent_since_last_update: 0,
         }
     }
 
-    pub fn on_update(&mut self, server: &Server) {
-        self.ticks_sent_since_last_update += 1;
-        if self.ticks_sent_since_last_update >= 160 {
-            self.ticks_sent_since_last_update = 0;
-            let actors = self.get_actors_by_creator(&server.steam_client.user().steam_id());
-            println!(
-                "[{TAG}] Sending actor_update for {} actors...",
-                actors.len()
+    pub fn sync_all_actors(&self, server: &Server, target: P2pPacketTarget) {
+        let actors = self.get_actors_by_creator(&server.steam_client.user().steam_id());
+        println!(
+            "[{TAG}] Sending actor_update for {} actors...",
+            actors.len()
+        );
+        for actor in actors {
+            send_variant_p2p(
+                &server.sender_p2p_packet,
+                build_actor_update_packet(actor),
+                target.clone(),
+                P2pChannel::ActorUpdate,
+                SendType::Reliable,
             );
-            for actor in actors {
-                send_variant_p2p(
-                    &server.sender_p2p_packet,
-                    build_actor_update_packet(actor),
-                    P2pPacketTarget::All,
-                    P2pChannel::ActorUpdate,
-                    SendType::Unreliable,
-                );
-                send_variant_p2p(
-                    &server.sender_p2p_packet,
-                    build_actor_action_packet(
-                        actor,
-                        "_set_zone",
-                        vec![
-                            VariantValue::String(actor.zone.clone()),
-                            VariantValue::Int(actor.zone_owner),
-                        ],
-                    ),
-                    P2pPacketTarget::All,
-                    P2pChannel::ActorUpdate,
-                    SendType::Unreliable,
-                );
-            }
+            send_variant_p2p(
+                &server.sender_p2p_packet,
+                build_actor_action_packet(
+                    actor,
+                    "_set_zone",
+                    vec![
+                        VariantValue::String(actor.zone.clone()),
+                        VariantValue::Int(actor.zone_owner),
+                    ],
+                ),
+                target.clone(),
+                P2pChannel::ActorUpdate,
+                SendType::Reliable,
+            );
         }
     }
 

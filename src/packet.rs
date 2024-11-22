@@ -16,6 +16,7 @@ pub mod variant;
 
 static TAG: &str = "packet";
 
+#[derive(Clone)]
 pub enum P2pPacketTarget {
     /// A specific Steam user.
     SteamId(SteamId),

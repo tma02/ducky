@@ -30,6 +30,5 @@ impl Game {
     pub fn on_update(&mut self, server: &mut Server) {
         self.spawn_manager.on_update(server, &mut self.actor_manager);
         self.peer_manager.on_update(server);
-        self.actor_manager.on_update(server);
     }
 }
