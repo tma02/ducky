@@ -75,7 +75,7 @@ fn main() {
             set_lobby_data(new_lobby_id, &matchmaking, &config);
         }
         while let Ok(update) = receiver_lobby_chat_update.try_recv() {
-            on_lobby_chat_update(&server, update);
+            on_lobby_chat_update(&server, &mut game, update);
         }
         while let Ok(steam_id) = receiver_p2p_request.try_recv() {
             on_p2p_session_request(&server, steam_id.clone());
@@ -208,8 +208,8 @@ fn set_lobby_data(lobby_id: LobbyId, matchmaking: &Matchmaking<ClientManager>, c
     matchmaking.set_lobby_data(lobby_id, "server_browser_value", "0");
 }
 
-fn on_lobby_chat_update(context: &Server, update: LobbyChatUpdate) {
-    if context
+fn on_lobby_chat_update(server: &Server, game: &mut Game, update: LobbyChatUpdate) {
+    if server
         .lobby_id
         .map(|lobby_id| lobby_id != update.lobby)
         // Optional is None if we don't have a lobby yet
@@ -227,10 +227,12 @@ fn on_lobby_chat_update(context: &Server, update: LobbyChatUpdate) {
             TAG,
             update.user_changed.raw()
         );
-        context
+        server
             .steam_client
             .networking()
             .close_p2p_session(update.user_changed);
+        game.actor_manager
+            .remove_all_actors_by_creator(&update.user_changed);
     } else if update.member_state_change == ChatMemberStateChange::Entered {
         println!(
             "[{}] User joined lobby: steam_id = {}",

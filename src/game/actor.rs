@@ -2,13 +2,16 @@ use std::{collections::HashMap, sync::mpsc::Sender};
 
 use steamworks::{SendType, SteamId};
 
-use crate::packet::{
-    util::{
-        build_actor_action_packet, build_actor_update_packet, build_instance_actor_packet,
-        send_variant_p2p,
+use crate::{
+    packet::{
+        util::{
+            build_actor_action_packet, build_actor_update_packet, build_instance_actor_packet,
+            send_variant_p2p,
+        },
+        variant::{Dictionary, VariantValue, Vector3},
+        OutgoingP2pPacketRequest, P2pChannel, P2pPacketTarget,
     },
-    variant::{Dictionary, VariantValue, Vector3},
-    OutgoingP2pPacketRequest, P2pChannel, P2pPacketTarget,
+    server::Server,
 };
 
 const MAX_ACTORS_PER_PLAYER: usize = 32;
@@ -279,6 +282,20 @@ impl ActorManager {
         true
     }
 
+    pub fn remove_all_actors_by_creator(
+        &mut self,
+        creator_id: &SteamId,
+    ) {
+        let actors: Vec<i64> = self
+            .get_actors_by_creator(creator_id)
+            .iter()
+            .map(|a| a.id)
+            .collect();
+        for actor_id in actors {
+            self.remove_actor(&actor_id);
+        }
+    }
+
     /// Gets the player actor of the given SteamId.
     pub fn get_player_actor(&self, steam_id: &SteamId) -> Option<&Actor> {
         self.player_actor_ids_by_creator
@@ -358,12 +375,15 @@ impl ActorManager {
     }
 
     /// Gets all actors created by the given SteamId.
-    pub fn get_actors_by_creator(&self, creator_id: &SteamId) -> Option<Vec<&Actor>> {
-        self.actor_ids_by_creator.get(creator_id).map(|ids| {
-            ids.iter()
-                .filter_map(|id| self.actors_by_id.get(id))
-                .collect()
-        })
+    pub fn get_actors_by_creator(&self, creator_id: &SteamId) -> Vec<&Actor> {
+        self.actor_ids_by_creator
+            .get(creator_id)
+            .map(|ids| {
+                ids.iter()
+                    .filter_map(|id| self.actors_by_id.get(id))
+                    .collect()
+            })
+            .unwrap_or(vec![])
     }
 
     /// Gets all actors in the given zone.
@@ -397,9 +417,6 @@ impl ActorManager {
             return false;
         }
 
-        self.get_actors_by_creator(creator_id)
-            .map(|v| v.len() < MAX_ACTORS_PER_PLAYER)
-            // If the creator does not have any actors, they can create one.
-            .unwrap_or(true)
+        self.get_actors_by_creator(creator_id).len() < MAX_ACTORS_PER_PLAYER
     }
 }
