@@ -14,7 +14,8 @@ use crate::{
     server::Server,
 };
 
-const MAX_ACTORS_PER_PLAYER: usize = 32;
+static TAG: &str = "game::actor";
+static MAX_ACTORS_PER_PLAYER: usize = 32;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum ActorType {
@@ -203,6 +204,7 @@ pub struct ActorManager {
     actors_by_id: HashMap<i64, Actor>,
     actor_ids_by_creator: HashMap<SteamId, Vec<i64>>,
     player_actor_ids_by_creator: HashMap<SteamId, i64>,
+    ticks_sent_since_last_update: u32,
 }
 
 impl ActorManager {
@@ -211,19 +213,28 @@ impl ActorManager {
             actors_by_id: HashMap::new(),
             actor_ids_by_creator: HashMap::new(),
             player_actor_ids_by_creator: HashMap::new(),
+            ticks_sent_since_last_update: 0,
         }
     }
 
-    pub fn on_update(&self, server: &Server) {
-        let actors = self.get_actors_by_creator(&server.steam_client.user().steam_id());
-        for actor in actors {
-            send_variant_p2p(
-                &server.sender_p2p_packet,
-                build_actor_update_packet(actor),
-                P2pPacketTarget::All,
-                P2pChannel::ActorUpdate,
-                SendType::Unreliable,
+    pub fn on_update(&mut self, server: &Server) {
+        self.ticks_sent_since_last_update += 1;
+        if self.ticks_sent_since_last_update >= 160 {
+            self.ticks_sent_since_last_update = 0;
+            let actors = self.get_actors_by_creator(&server.steam_client.user().steam_id());
+            println!(
+                "[{TAG}] Sending actor_update for {} actors...",
+                actors.len()
             );
+            for actor in actors {
+                send_variant_p2p(
+                    &server.sender_p2p_packet,
+                    build_actor_update_packet(actor),
+                    P2pPacketTarget::All,
+                    P2pChannel::ActorUpdate,
+                    SendType::Unreliable,
+                );
+            }
         }
     }
 
