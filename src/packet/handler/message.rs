@@ -29,7 +29,6 @@ pub fn handle(server: &mut Server, game: &mut Game, steam_id: SteamId, packet: D
 
         let command_context = CommandContext {
             sender: steam_id,
-            packet,
             command,
             args,
         };
