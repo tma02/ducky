@@ -43,7 +43,7 @@ fn insert_actor_from_list(game: &mut Game, steam_id: &SteamId, actor_dict: &Dict
     let actor = Actor {
         id: *id,
         creator_id: steam_id.clone(),
-        actor_type: actor_type,
+        actor_type,
         zone: "".to_owned(),
         zone_owner: -1,
         position: Vector3 {
@@ -57,6 +57,14 @@ fn insert_actor_from_list(game: &mut Game, steam_id: &SteamId, actor_dict: &Dict
             z: 0.0,
         },
     };
+    if !game
+        .actor_manager
+        .user_can_create_actor(&steam_id, false, &actor.actor_type)
+    {
+        println!("[{TAG}] Blocked user actor replication: actor = {actor:?}");
+        return;
+    }
+    
     println!("[{TAG}] Inserting actor: actor = {actor:?}");
     game.actor_manager.insert_actor(actor);
 }
