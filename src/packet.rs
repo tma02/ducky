@@ -21,9 +21,6 @@ pub enum P2pPacketTarget {
     SteamId(SteamId),
     /// All lobby members. This includes those who are on the kick or ban list.
     All,
-    /// All lobby members that are not the sender or host, and not on the kick or ban list. The
-    /// value is the sender's SteamId (which will not receive the message).
-    Peers(SteamId),
 }
 
 #[repr(i32)]
@@ -100,24 +97,9 @@ pub fn on_send_packet(server: &Server, outgoing: OutgoingP2pPacketRequest) {
             channel_i32,
         );
     } else if let Some(lobby_id) = server.lobby_id {
-        // TODO: Maybe some way to consolidate this? The only difference between these two blocks is
-        //  the 2nd one also ignores a specific SteamId.
         if let P2pPacketTarget::All = outgoing.target {
             for steam_id in server.steam_client.matchmaking().lobby_members(lobby_id) {
                 if steam_id == server.steam_client.user().steam_id() {
-                    continue;
-                }
-                server.steam_client.networking().send_p2p_packet_on_channel(
-                    steam_id,
-                    outgoing.send_type.clone(),
-                    &buffer,
-                    channel_i32,
-                );
-            }
-        } else if let P2pPacketTarget::Peers(ignore_steam_id) = outgoing.target {
-            for steam_id in server.steam_client.matchmaking().lobby_members(lobby_id) {
-                if steam_id == server.steam_client.user().steam_id() || steam_id == ignore_steam_id
-                {
                     continue;
                 }
                 server.steam_client.networking().send_p2p_packet_on_channel(

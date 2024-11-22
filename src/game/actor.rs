@@ -183,6 +183,20 @@ impl Actor {
 
         VariantValue::Dictionary(params)
     }
+
+    pub fn clone_to_replication_variant_dict(&self) -> VariantValue {
+        let mut params = Dictionary::new();
+        params.insert("id".to_owned(), VariantValue::Int(self.id));
+        params.insert(
+            "owner".to_owned(),
+            VariantValue::Int(self.creator_id.raw() as i64),
+        );
+        params.insert(
+            "type".to_owned(),
+            VariantValue::String(String::from(self.actor_type.clone())),
+        );
+        VariantValue::Dictionary(params)
+    }
 }
 
 pub struct ActorManager {
@@ -197,6 +211,19 @@ impl ActorManager {
             actors_by_id: HashMap::new(),
             actor_ids_by_creator: HashMap::new(),
             player_actor_ids_by_creator: HashMap::new(),
+        }
+    }
+
+    pub fn on_update(&self, server: &Server) {
+        let actors = self.get_actors_by_creator(&server.steam_client.user().steam_id());
+        for actor in actors {
+            send_variant_p2p(
+                &server.sender_p2p_packet,
+                build_actor_update_packet(actor),
+                P2pPacketTarget::All,
+                P2pChannel::ActorUpdate,
+                SendType::Unreliable,
+            );
         }
     }
 
@@ -282,10 +309,7 @@ impl ActorManager {
         true
     }
 
-    pub fn remove_all_actors_by_creator(
-        &mut self,
-        creator_id: &SteamId,
-    ) {
+    pub fn remove_all_actors_by_creator(&mut self, creator_id: &SteamId) {
         let actors: Vec<i64> = self
             .get_actors_by_creator(creator_id)
             .iter()
@@ -303,13 +327,6 @@ impl ActorManager {
             .and_then(|id| self.actors_by_id.get(id))
     }
 
-    /// Gets the player actor of the user with the given SteamId.
-    pub fn get_player_actor_mut(&mut self, creator_id: &SteamId) -> Option<&mut Actor> {
-        self.player_actor_ids_by_creator
-            .get(creator_id)
-            .and_then(|id| self.actors_by_id.get_mut(id))
-    }
-
     /// Gets the actor with the given actor ID.
     pub fn get_actor(&self, id: &i64) -> Option<&Actor> {
         self.actors_by_id.get(id)
@@ -318,47 +335,6 @@ impl ActorManager {
     /// Gets the actor with the given actor ID.
     pub fn get_actor_mut(&mut self, id: &i64) -> Option<&mut Actor> {
         self.actors_by_id.get_mut(id)
-    }
-
-    /// Updates an actor's position and rotation.
-    pub fn update_host_actor(
-        &mut self,
-        sender_p2p_packet: &Sender<OutgoingP2pPacketRequest>,
-        id: &i64,
-        position: &Vector3,
-        rotation: &Vector3,
-    ) -> Option<&Actor> {
-        let Some(actor) = self.actors_by_id.get_mut(id) else {
-            return None;
-        };
-
-        actor.position.x = position.x;
-        actor.position.y = position.y;
-        actor.position.z = position.z;
-        actor.rotation.x = rotation.x;
-        actor.rotation.y = rotation.y;
-        actor.rotation.z = rotation.z;
-
-        send_variant_p2p(
-            &sender_p2p_packet,
-            build_actor_update_packet(actor),
-            P2pPacketTarget::All,
-            P2pChannel::ActorUpdate,
-            SendType::Reliable,
-        );
-
-        Some(actor)
-    }
-
-    pub fn set_host_actor_zone(&mut self, id: &i64, zone: String) -> Option<&Actor> {
-        if let Some(actor) = self.actors_by_id.get_mut(id) {
-            actor.zone = zone;
-            todo!(); // TODO: Broadcast actor update
-
-            return Some(actor);
-        }
-
-        None
     }
 
     /// Sets the zone and zone_owner of the actor with the given ID. This does not perform any
@@ -384,14 +360,6 @@ impl ActorManager {
                     .collect()
             })
             .unwrap_or(vec![])
-    }
-
-    /// Gets all actors in the given zone.
-    pub fn get_actors_by_zone(&self, zone: &str) -> Vec<&Actor> {
-        self.actors_by_id
-            .values()
-            .filter(|actor| actor.zone == *zone)
-            .collect()
     }
 
     /// Gets all actors of the given actor type.

@@ -10,13 +10,20 @@ use crate::{
     Server,
 };
 
-pub fn handle(server: &mut Server, _game: &mut Game, steam_id: SteamId, _packet: Dictionary) {
+pub fn handle(server: &mut Server, game: &mut Game, steam_id: SteamId, _packet: Dictionary) {
     let mut response = Dictionary::new();
     response.insert(
         "type".to_owned(),
         VariantValue::String("actor_request_send".to_string()),
     );
-    response.insert("list".to_owned(), VariantValue::Array(Vec::new()));
+    let actors = game
+        .actor_manager
+        .get_actors_by_creator(&server.steam_client.user().steam_id());
+    let mut list = Vec::new();
+    for actor in actors {
+        list.push(actor.clone_to_replication_variant_dict());
+    }
+    response.insert("list".to_owned(), VariantValue::Array(list));
 
     send_variant_p2p(
         &server.sender_p2p_packet,
