@@ -69,26 +69,22 @@ fn main() {
     game.on_ready(&mut server);
 
     loop {
-        server.steam_client.run_callbacks();
-
-        if let Ok(new_lobby_id) = receiver_create_lobby.try_recv() {
+        while let Ok(new_lobby_id) = receiver_create_lobby.try_recv() {
             // On lobby created
             server.set_lobby_id(new_lobby_id);
             set_lobby_data(new_lobby_id, &matchmaking, &config);
         }
-
-        if let Ok(update) = receiver_lobby_chat_update.try_recv() {
+        while let Ok(update) = receiver_lobby_chat_update.try_recv() {
             on_lobby_chat_update(&server, update);
         }
-
-        if let Ok(steam_id) = receiver_p2p_request.try_recv() {
+        while let Ok(steam_id) = receiver_p2p_request.try_recv() {
             on_p2p_session_request(&server, steam_id.clone());
         }
-
-        if let Ok(outgoing) = receiver_p2p_packet.try_recv() {
+        while let Ok(outgoing) = receiver_p2p_packet.try_recv() {
             on_send_packet(&server, outgoing);
         }
 
+        server.steam_client.run_callbacks();
         for channel in P2pChannel::VALUES {
             let channel_i32 = channel as i32;
             while let Some(size) = networking.is_p2p_packet_available_on_channel(channel_i32) {
