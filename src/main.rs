@@ -28,7 +28,7 @@ mod server;
 
 static TAG: &str = "ducky";
 static WF_APP_ID: u32 = 3146520;
-static TICK_MS: u128 = 30;
+static TICK_MS: u128 = 1000 / 16; // 16 ticks/s
 
 fn main() {
     let server_epoch = Instant::now();
