@@ -204,8 +204,12 @@ fn set_lobby_data(lobby_id: LobbyId, matchmaking: &Matchmaking<ClientManager>, c
     );
     matchmaking.set_lobby_data(lobby_id, "age_limit", "false");
     matchmaking.set_lobby_data(lobby_id, "cap", config.max_players.to_string().as_str());
-    // TODO: randomize this between 0<=20
-    matchmaking.set_lobby_data(lobby_id, "server_browser_value", "0");
+    matchmaking.set_lobby_data(
+        lobby_id,
+        "server_browser_value",
+        &random::lobby_server_browser_value(),
+    );
+    matchmaking.set_lobby_data(lobby_id, "lurefilter", "dedicated");
 }
 
 fn on_lobby_chat_update(server: &Server, game: &mut Game, update: LobbyChatUpdate) {

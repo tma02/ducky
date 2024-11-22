@@ -29,3 +29,7 @@ pub fn lobby_code() -> String {
         })
         .collect()
 }
+
+pub fn lobby_server_browser_value() -> String {
+    rand::thread_rng().gen_range(0..20).to_string()
+}
