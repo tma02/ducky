@@ -45,5 +45,6 @@ motd = "This lobby is powered by Ducky.\nType !help to see commands."
 game_version = "1.1"
 max_players = 25
 code_only = true
+adult_only = false
 ban_list = []
 ```

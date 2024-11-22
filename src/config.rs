@@ -7,6 +7,7 @@ pub struct Config {
     pub game_version: String,
     pub max_players: u32,
     pub code_only: bool,
+    pub adult_only: bool,
     pub ban_list: Vec<u64>
 }
 
@@ -18,6 +19,7 @@ impl Default for Config {
             game_version: "1.1".to_string(),
             max_players: 25,
             code_only: true,
+            adult_only: false,
             ban_list: vec![],
         }
     }

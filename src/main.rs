@@ -202,7 +202,11 @@ fn set_lobby_data(lobby_id: LobbyId, matchmaking: &Matchmaking<ClientManager>, c
             .collect::<Vec<String>>()
             .join(","),
     );
-    matchmaking.set_lobby_data(lobby_id, "age_limit", "false");
+    matchmaking.set_lobby_data(
+        lobby_id,
+        "age_limit",
+        if config.adult_only { "true" } else { "false" },
+    );
     matchmaking.set_lobby_data(lobby_id, "cap", config.max_players.to_string().as_str());
     matchmaking.set_lobby_data(
         lobby_id,
