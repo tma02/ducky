@@ -71,10 +71,9 @@ pub fn on_receive_packet(
     let var = decode_variant(&decompressed_buf);
     if let Ok(VariantValue::Dictionary(dict)) = var {
         if let Some(handler) = resolve_handler(&dict) {
-            //println!("Handling: {:?}", dict.get("type").unwrap());
             handler(server, game, remote, dict);
         } else {
-            //println!("Unknown type for packet: root = {:?}", dict);
+            println!("Unknown type for packet: root = {:?}", dict);
         }
     } else {
         println!("Ignoring decode error for: buf = {:?}", decompressed_buf);
