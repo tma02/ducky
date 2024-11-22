@@ -234,6 +234,20 @@ impl ActorManager {
                     P2pChannel::ActorUpdate,
                     SendType::Unreliable,
                 );
+                send_variant_p2p(
+                    &server.sender_p2p_packet,
+                    build_actor_action_packet(
+                        actor,
+                        "_set_zone",
+                        vec![
+                            VariantValue::String(actor.zone.clone()),
+                            VariantValue::Int(actor.zone_owner),
+                        ],
+                    ),
+                    P2pPacketTarget::All,
+                    P2pChannel::ActorUpdate,
+                    SendType::Unreliable,
+                );
             }
         }
     }
