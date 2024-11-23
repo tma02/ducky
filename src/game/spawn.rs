@@ -19,7 +19,8 @@ static TAG: &str = "game::spawn";
 // TODO: make these configurable
 static SPAWN_LIFETIMES: LazyLock<HashMap<ActorType, Duration>> = LazyLock::new(|| {
     let mut map = HashMap::new();
-    // One physics tick is 1/60s
+    // One physics tick is 1/60s. We use Duration instead of network ticks since network is
+    // decoupled from physics ticks, but we only have a network loop.
     map.insert(ActorType::Raincloud, Duration::from_secs(32500 / 60));
     map.insert(ActorType::FishSpawn, Duration::from_secs(4800 / 60));
     map.insert(ActorType::FishSpawnAlien, Duration::from_secs(14400 / 60));

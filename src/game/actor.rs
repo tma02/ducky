@@ -229,6 +229,11 @@ impl ActorManager {
                 P2pChannel::ActorUpdate,
                 SendType::Reliable,
             );
+            // The real game caches the most recently broadcasted zone for each actor and only sends
+            // changes. This causes a bug(?) since newly connected peers will not have received the
+            // zone update. For most actors this is fine since they default to "main_zone", but for
+            // actors instantiated through `actor_request_send`, they will not have a zone set and
+            // thus will be invisible.
             send_variant_p2p(
                 &server.sender_p2p_packet,
                 build_actor_action_packet(
