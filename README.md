@@ -5,12 +5,6 @@ the networking and game logic from the perspective of a WEBFISHING lobby host.
 
 ## Getting started
 
-### Installing dependencies
-
-```bash
-cargo install
-```
-
 ### Running
 
 > [!NOTE]
