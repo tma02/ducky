@@ -12,6 +12,11 @@ the networking and game logic from the perspective of a WEBFISHING lobby host.
 > use the same Steam account for both Ducky and joining the hosted lobby. This is because WEBFISHING
 > lobbies can only be created through Steam's matchmaking system.
 
+Running Ducky may, just like all games using Steam's P2P networking, expose your public IP address
+to anyone wishing to connect. If this concerns you, check out this Steam Support article under the
+heading "What about games that use Steam Networking APIs?":
+https://help.steampowered.com/en/faqs/view/1433-AD20-F11D-B71E
+
 ```bash
 cargo run release
 ```
