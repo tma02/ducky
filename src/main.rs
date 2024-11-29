@@ -168,15 +168,14 @@ fn set_lobby_data(lobby_id: LobbyId, matchmaking: &Matchmaking<ClientManager>, c
         TAG,
         lobby_id.raw()
     );
-    let lobby_code = lobby_code();
-    println!("[{}] Lobby code: {}", TAG, lobby_code);
+    println!("[{}] Lobby code: {}", TAG, config.lobby_code);
 
     // Always joinable
     matchmaking.set_lobby_joinable(lobby_id, true);
     matchmaking.set_lobby_data(lobby_id, "lobby_name", &config.name);
     matchmaking.set_lobby_data(lobby_id, "ref", "webfishing_gamelobby");
     matchmaking.set_lobby_data(lobby_id, "version", &config.game_version);
-    matchmaking.set_lobby_data(lobby_id, "code", &lobby_code);
+    matchmaking.set_lobby_data(lobby_id, "code", &config.lobby_code);
     matchmaking.set_lobby_data(
         lobby_id,
         "type",
