@@ -12,7 +12,6 @@ use packet::{
     util::{build_force_disconnect_player_packet, build_handshake_packet, send_variant_p2p},
     OutgoingP2pPacketRequest, P2pChannel, P2pPacketTarget,
 };
-use random::lobby_code;
 use server::Server;
 use steamworks::{
     ChatMemberStateChange, Client, ClientManager, LobbyChatUpdate, LobbyId, LobbyType, Matchmaking,
