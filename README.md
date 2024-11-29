@@ -23,8 +23,8 @@ cargo run release
 
 #### Lobby code
 
-Ducky will generate a random lobby code during startup. This code will be among the last lines
-printed during initialization.
+If the `lobby_code` config field is not set, Ducky will generate a random lobby code during startup.
+This code will be among the last lines printed during initialization.
 
 ```
 [ducky] Lobby code: ABC123
@@ -42,7 +42,7 @@ configuration](https://github.com/tma02/ducky/blob/master/src/config.rs#L12).
 name = "A Ducky Server"
 motd = "This lobby is powered by Ducky.\nType !help to see commands."
 game_version = "1.1"
-lobby_code = "HELLOO"
+lobby_code = "DUCKYY"
 max_players = 25
 code_only = true
 adult_only = false
