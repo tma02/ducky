@@ -255,6 +255,23 @@ fn on_lobby_chat_update(server: &Server, game: &mut Game, update: LobbyChatUpdat
             TAG,
             update.user_changed.raw()
         );
+        
+        if server.banned_steam_id(&update.user_changed) {
+            println!(
+                "[{}] Sending force_disconnect_player packet to block P2P on players: steam_id = {}",
+                TAG,
+                update.user_changed.raw()
+            );
+
+            send_variant_p2p(
+                &server.sender_p2p_packet,
+                build_force_disconnect_player_packet(&update.user_changed.raw()),
+                P2pPacketTarget::All,
+                P2pChannel::GameState,
+                SendType::Reliable,
+            );
+            return;
+        }
     }
 }
 
@@ -266,19 +283,6 @@ fn on_p2p_session_request(server: &Server, steam_id: SteamId) {
             "[{}] Blocking P2P request from user on ban list: steam_id = {}",
             TAG,
             steam_id.raw()
-        );
-        println!(
-            "[{}] Sending force_disconnect_player packet to block P2P on players: steam_id = {}",
-            TAG,
-            steam_id.raw()
-        );
-
-        send_variant_p2p(
-            &server.sender_p2p_packet,
-            build_force_disconnect_player_packet(&steam_id.raw()),
-            P2pPacketTarget::All,
-            P2pChannel::GameState,
-            SendType::Reliable,
         );
         return;
     }
