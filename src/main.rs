@@ -28,6 +28,7 @@ mod server;
 static TAG: &str = "ducky";
 static WF_APP_ID: u32 = 3146520;
 static TICK_MS: u128 = 1000 / 16; // 16 ticks/s
+static LOBBY_UPDATE_INTERVAL_SEC: u64 = 3600;
 
 fn main() {
     let server_epoch = Instant::now();
@@ -67,6 +68,8 @@ fn main() {
     let mut game = Game::new();
     game.on_ready(&mut server);
 
+    let mut lobby_update_timer = Instant::now();
+
     loop {
         while let Ok(new_lobby_id) = receiver_create_lobby.try_recv() {
             // On lobby created
@@ -81,6 +84,13 @@ fn main() {
         }
         while let Ok(outgoing) = receiver_p2p_packet.try_recv() {
             on_send_packet(&server, outgoing);
+        }
+
+        if lobby_update_timer.elapsed() > Duration::from_secs(LOBBY_UPDATE_INTERVAL_SEC) {
+            if let Some(lobby_id) = server.lobby_id {
+                lobby_update_timer = Instant::now();
+                set_lobby_data(lobby_id, &matchmaking, &config);
+            }
         }
 
         server.steam_client.run_callbacks();
