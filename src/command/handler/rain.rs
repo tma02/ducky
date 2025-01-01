@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use crate::{
     command::CommandContext,
     game::{actor::ActorType, Game},
@@ -27,10 +29,22 @@ pub fn handle(server: &mut Server, game: &mut Game, command_ctx: CommandContext)
 
     let spawn_manager = &mut game.spawn_manager;
     if !spawn_manager.can_spawn_user_actor(&ActorType::Raincloud) {
-        let _ = server.send_chat_message(
-            &command_ctx.sender,
-            "Failed. Someone already spawned a rain cloud.",
-        );
+        let next_raincloud_instant = spawn_manager.next_user_spawn_instant(&ActorType::Raincloud);
+        if let Some(next_raincloud_instant) = next_raincloud_instant {
+            let _ = server.send_chat_message(
+                &command_ctx.sender,
+                format!(
+                    "Someone already spawned a rain cloud. Please wait {}.",
+                    format_timeout_from_now(next_raincloud_instant)
+                )
+                .as_str(),
+            );
+        } else {
+            let _ = server.send_chat_message(
+                &command_ctx.sender,
+                "Someone already spawned a rain cloud. Please wait for it to despawn.",
+            );
+        }
         return;
     }
     let mut raincloud_position = player_actor.position.clone();
@@ -43,4 +57,17 @@ pub fn handle(server: &mut Server, game: &mut Game, command_ctx: CommandContext)
     );
 
     server.send_chat_message(&command_ctx.sender, "Spawned rain cloud.");
+}
+
+fn format_timeout_from_now(instant: &Instant) -> String {
+    let duration = instant.duration_since(Instant::now());
+    let secs = duration.as_secs();
+
+    if secs < 60 {
+        format!("{}s", secs)
+    } else if secs < 3600 {
+        format!("{}m {}s", secs / 60, secs % 60)
+    } else {
+        format!("{}h {}m {}s", secs / 3600, (secs % 3600) / 60, secs % 60)
+    }
 }

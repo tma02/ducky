@@ -498,6 +498,19 @@ impl SpawnManager {
         }
     }
 
+    /// Spawns a user triggered raincloud. This will broadcast the spawn to all clients.
+    pub fn next_user_spawn_instant(
+        &mut self,
+        actor_type: &ActorType,
+    ) -> Option<&Instant> {
+        self.user_spawns.get(&actor_type).and_then(|spawns| {
+            spawns
+                .iter()
+                .filter_map(|id| self.spawn_timeouts.get(id))
+                .min_by(|a, b| a.cmp(b))
+        })
+    }
+
     pub fn random_spawn_point(&self, group: &str) -> Option<&Vector3> {
         self.spawn_points
             .get(group)?
