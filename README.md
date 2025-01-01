@@ -42,7 +42,7 @@ configuration](https://github.com/tma02/ducky/blob/master/src/config.rs#L12).
 name = "A Ducky Server"
 motd = "This lobby is powered by Ducky.\nType !help to see commands."
 game_version = "1.12"
-lobby_code = "DUCKYY"
+lobby_code = "EXAMPL"
 max_players = 25
 unlisted = false
 tag_talkative = false
