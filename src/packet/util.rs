@@ -1,4 +1,4 @@
-use std::sync::mpsc::Sender;
+use std::{collections::HashSet, sync::mpsc::Sender};
 
 use steamworks::{SendType, SteamId};
 
@@ -131,6 +131,26 @@ pub fn build_actor_request_packet(user_id: SteamId) -> VariantValue {
     packet.insert(
         "user_id".to_owned(),
         VariantValue::String(user_id.raw().to_string()),
+    );
+
+    VariantValue::Dictionary(packet)
+}
+
+pub fn build_weblobby_packet(member_list: &HashSet<u64>) -> VariantValue {
+    let mut packet = Dictionary::new();
+    packet.insert(
+        "type".to_owned(),
+        VariantValue::String("receive_weblobby".to_owned()),
+    );
+
+    let mut lobby_members = Array::new();
+    member_list.iter().for_each(|member| {
+        lobby_members.push(VariantValue::Int(member.to_owned() as i64));
+    });
+
+    packet.insert(
+        "weblobby".to_owned(),
+        VariantValue::Array(lobby_members),
     );
 
     VariantValue::Dictionary(packet)
