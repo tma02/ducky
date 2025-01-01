@@ -42,6 +42,7 @@ static SPAWN_COUNT_LIMITS: LazyLock<HashMap<ActorType, usize>> = LazyLock::new(|
 
     map
 });
+static MAX_ACTORS: usize = 30; // 32 - 2 dedicated rain spawn slots.
 
 pub struct SpawnManager {
     /// Spawns which are built into the game.
@@ -405,11 +406,13 @@ impl SpawnManager {
 
     /// Returns if the current game state permits spawning the given actor type.
     fn can_spawn_game_actor(&self, actor_type: &ActorType) -> bool {
-        self.game_spawns
-            .get(actor_type)
-            .map(|v| v.len())
-            .unwrap_or(0)
-            < *SPAWN_COUNT_LIMITS.get(actor_type).unwrap_or(&usize::MAX)
+        self.game_spawns.values().map(|v| v.len()).sum::<usize>() < MAX_ACTORS
+            && self
+                .game_spawns
+                .get(actor_type)
+                .map(|v| v.len())
+                .unwrap_or(0)
+                < *SPAWN_COUNT_LIMITS.get(actor_type).unwrap_or(&usize::MAX)
     }
 
     /// Returns a list of actor IDs that need to be despawned.
@@ -488,7 +491,8 @@ impl SpawnManager {
                     .get(&ActorType::Raincloud)
                     .map(|v| v.len())
                     .unwrap_or(0)
-                    == 0
+                    // At most 2 can be spawned at any given time.
+                    < 2
             }
             _ => false,
         }
