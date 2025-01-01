@@ -204,9 +204,51 @@ fn set_lobby_data(lobby_id: LobbyId, matchmaking: &Matchmaking<ClientManager>, c
     matchmaking.set_lobby_data(lobby_id, "code", &config.lobby_code);
     matchmaking.set_lobby_data(
         lobby_id,
+        "tag_talkative",
+        &Config::get_lobby_data_for_bool(config.tag_talkative),
+    );
+    matchmaking.set_lobby_data(
+        lobby_id,
+        "tag_quiet",
+        &Config::get_lobby_data_for_bool(config.tag_quiet),
+    );
+    matchmaking.set_lobby_data(
+        lobby_id,
+        "tag_grinding",
+        &Config::get_lobby_data_for_bool(config.tag_grinding),
+    );
+    matchmaking.set_lobby_data(
+        lobby_id,
+        "tag_chill",
+        &Config::get_lobby_data_for_bool(config.tag_chill),
+    );
+    matchmaking.set_lobby_data(
+        lobby_id,
+        "tag_silly",
+        &Config::get_lobby_data_for_bool(config.tag_silly),
+    );
+    matchmaking.set_lobby_data(
+        lobby_id,
+        "tag_hardcore",
+        &Config::get_lobby_data_for_bool(config.tag_hardcore),
+    );
+    matchmaking.set_lobby_data(
+        lobby_id,
+        "tag_mature",
+        &Config::get_lobby_data_for_bool(config.tag_mature),
+    );
+    matchmaking.set_lobby_data(
+        lobby_id,
+        "tag_modded",
+        &Config::get_lobby_data_for_bool(config.tag_modded),
+    );
+    matchmaking.set_lobby_data(lobby_id, "request", "false");
+    matchmaking.set_lobby_data(lobby_id, "timestamp", "2000000000");
+    matchmaking.set_lobby_data(
+        lobby_id,
         "type",
-        if config.code_only {
-            "code_only"
+        if config.unlisted {
+            "unlisted"
         } else {
             "public"
         },
@@ -214,7 +256,7 @@ fn set_lobby_data(lobby_id: LobbyId, matchmaking: &Matchmaking<ClientManager>, c
     matchmaking.set_lobby_data(
         lobby_id,
         "public",
-        if config.code_only { "false" } else { "true" },
+        if config.unlisted { "false" } else { "true" },
     );
     // This is a CSV of SteamIDs
     matchmaking.set_lobby_data(
@@ -227,17 +269,9 @@ fn set_lobby_data(lobby_id: LobbyId, matchmaking: &Matchmaking<ClientManager>, c
             .collect::<Vec<String>>()
             .join(","),
     );
-    matchmaking.set_lobby_data(
-        lobby_id,
-        "age_limit",
-        if config.adult_only { "true" } else { "false" },
-    );
     matchmaking.set_lobby_data(lobby_id, "cap", config.max_players.to_string().as_str());
-    matchmaking.set_lobby_data(
-        lobby_id,
-        "server_browser_value",
-        &random::lobby_server_browser_value(),
-    );
+    matchmaking.set_lobby_data(lobby_id, "count", "1");
+    matchmaking.set_lobby_data(lobby_id, "server_browser_value", "0");
     matchmaking.set_lobby_data(lobby_id, "lurefilter", "dedicated");
 }
 
