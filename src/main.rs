@@ -1,6 +1,10 @@
 use std::{
+    borrow::Borrow,
     fs, io,
-    sync::mpsc::{self, Sender},
+    sync::{
+        mpsc::{self, Sender},
+        Arc, Mutex,
+    },
     thread,
     time::{Duration, Instant},
 };
@@ -14,8 +18,8 @@ use packet::{
 };
 use server::Server;
 use steamworks::{
-    ChatMemberStateChange, Client, ClientManager, LobbyChatUpdate, LobbyId, LobbyType, Matchmaking,
-    P2PSessionRequest, SendType, SteamId,
+    ChatMemberStateChange, Client, ClientManager, LobbyChatMsg, LobbyChatUpdate, LobbyId,
+    LobbyType, Matchmaking, SendType, SteamId,
 };
 
 mod command;
@@ -44,21 +48,22 @@ fn main() {
     println!("[{TAG}] Using config: config = {config:?}");
 
     let client = init_steam_client();
-    let (sender_p2p_request, receiver_p2p_request) = mpsc::channel();
-    init_steam_networking(&client, sender_p2p_request);
+    init_steam_networking(&client);
 
     let (sender_create_lobby, receiver_create_lobby) = mpsc::channel();
     let (sender_lobby_chat_update, receiver_lobby_chat_update) = mpsc::channel();
+    let (sender_lobby_chat_msg, receiver_lobby_chat_msg) = mpsc::channel();
     init_lobby(
         &client,
         &config,
         sender_create_lobby,
         sender_lobby_chat_update,
+        sender_lobby_chat_msg,
     );
 
     let (sender_p2p_packet, receiver_p2p_packet) = mpsc::channel::<OutgoingP2pPacketRequest>();
     let matchmaking = client.matchmaking();
-    let networking = client.networking();
+    let networking_messages = client.networking_messages();
     let mut server = Server::new(client, sender_p2p_packet, config.motd.clone());
     config
         .ban_list
@@ -68,9 +73,15 @@ fn main() {
     let mut game = Game::new();
     game.on_ready(&mut server);
 
+    let server_arc = Arc::new(Mutex::new(server));
+    add_net_session_callback(server_arc.clone());
+
     let mut lobby_update_timer = Instant::now();
 
     loop {
+        let Ok(mut server) = server_arc.lock() else {
+            continue;
+        };
         while let Ok(new_lobby_id) = receiver_create_lobby.try_recv() {
             // On lobby created
             server.set_lobby_id(new_lobby_id);
@@ -79,8 +90,8 @@ fn main() {
         while let Ok(update) = receiver_lobby_chat_update.try_recv() {
             on_lobby_chat_update(&server, &mut game, update);
         }
-        while let Ok(steam_id) = receiver_p2p_request.try_recv() {
-            on_p2p_session_request(&server, steam_id.clone());
+        while let Ok(msg) = receiver_lobby_chat_msg.try_recv() {
+            on_lobby_chat_msg(&server, &mut game, msg);
         }
         while let Ok(outgoing) = receiver_p2p_packet.try_recv() {
             on_send_packet(&server, outgoing);
@@ -95,14 +106,16 @@ fn main() {
 
         server.steam_client.run_callbacks();
         for channel in P2pChannel::VALUES {
-            let channel_i32 = channel as i32;
-            while let Some(size) = networking.is_p2p_packet_available_on_channel(channel_i32) {
-                let mut buffer_vec = vec![0; size];
-                let buffer = buffer_vec.as_mut_slice();
-                if let Some((sender, _)) =
-                    networking.read_p2p_packet_from_channel(buffer, channel_i32)
-                {
-                    on_receive_packet(&mut server, &mut game, buffer_vec, sender);
+            let channel_u32 = channel as u32;
+            loop {
+                let received = networking_messages.receive_messages_on_channel(channel_u32, 1);
+                if received.len() == 0 {
+                    break;
+                }
+                for message in received {
+                    if let Some(sender) = message.identity_peer().steam_id() {
+                        on_receive_packet(&mut server, &mut game, message.data().to_vec(), sender);
+                    }
                 }
             }
         }
@@ -131,13 +144,54 @@ fn init_steam_client() -> Client {
     client
 }
 
-fn init_steam_networking(client: &Client, sender: Sender<SteamId>) {
+fn init_steam_networking(client: &Client) {
     client.networking_utils().init_relay_network_access();
+}
 
-    client.register_callback(move |request: P2PSessionRequest| {
-        println!("[{}] Got P2PSessionRequest", TAG);
-        sender.send(request.remote).unwrap();
-    });
+fn add_net_session_callback(server: Arc<Mutex<Server>>) {
+    let server_clone = server.clone();
+    let client = &server.lock().unwrap().steam_client;
+    client
+        .networking_messages()
+        .session_request_callback(move |request| {
+            println!("[{}] Session request received...", TAG);
+            let Ok(server) = server_clone.lock() else {
+                request.reject();
+                return;
+            };
+            let steam_id = request.remote().steam_id();
+            let Some(steam_id) = steam_id else {
+                request.reject();
+                return;
+            };
+            println!("[{}] Session request: steam_id = {}", TAG, steam_id.raw());
+            // Check for reasons to not accept the request.
+            if server.banned_steam_id(&steam_id) {
+                println!(
+                    "[{}] Blocking session request from user on ban list: steam_id = {}",
+                    TAG,
+                    steam_id.raw()
+                );
+                request.reject();
+                return;
+            }
+            // Checks have passed, let's accept the request
+            println!(
+                "[{}] Accepting session request: steam_id = {}",
+                TAG,
+                steam_id.raw()
+            );
+            request.accept();
+
+            // Send the handshake
+            send_variant_p2p(
+                &server.sender_p2p_packet,
+                build_handshake_packet(server.steam_client.user().steam_id()),
+                P2pPacketTarget::All,
+                P2pChannel::GameState,
+                SendType::Reliable,
+            );
+        });
 }
 
 fn init_lobby(
@@ -145,6 +199,7 @@ fn init_lobby(
     config: &Config,
     sender_create_lobby: Sender<LobbyId>,
     sender_lobby_chat_update: Sender<LobbyChatUpdate>,
+    sender_lobby_chat_msg: Sender<LobbyChatMsg>,
 ) {
     println!("[{}] Creating Steam lobby...", TAG);
 
@@ -168,6 +223,10 @@ fn init_lobby(
 
     client.register_callback(move |update: LobbyChatUpdate| {
         sender_lobby_chat_update.send(update).unwrap();
+    });
+
+    client.register_callback(move |msg: LobbyChatMsg| {
+        sender_lobby_chat_msg.send(msg).unwrap();
     });
 }
 
@@ -243,19 +302,17 @@ fn on_lobby_chat_update(server: &Server, game: &mut Game, update: LobbyChatUpdat
             TAG,
             update.user_changed.raw()
         );
-        server
-            .steam_client
-            .networking()
-            .close_p2p_session(update.user_changed);
         game.actor_manager
             .remove_all_actors_by_creator(&update.user_changed);
+        // We don't close any sessions here since the rust bindings doesn't expose a way to do this.
+        // The session should timeout anyway after a few minutes.
     } else if update.member_state_change == ChatMemberStateChange::Entered {
         println!(
             "[{}] User joined lobby: steam_id = {}",
             TAG,
             update.user_changed.raw()
         );
-        
+
         if server.banned_steam_id(&update.user_changed) {
             println!(
                 "[{}] Sending force_disconnect_player packet to block P2P on players: steam_id = {}",
@@ -275,34 +332,19 @@ fn on_lobby_chat_update(server: &Server, game: &mut Game, update: LobbyChatUpdat
     }
 }
 
-fn on_p2p_session_request(server: &Server, steam_id: SteamId) {
-    println!("[{}] P2P request: steam_id = {}", TAG, steam_id.raw());
-    // Check for reasons to not accept the request.
-    if server.banned_steam_id(&steam_id) {
-        println!(
-            "[{}] Blocking P2P request from user on ban list: steam_id = {}",
-            TAG,
-            steam_id.raw()
-        );
-        return;
-    }
-    // Checks have passed, let's accept the request
-    println!(
-        "[{}] Accepting P2P request: steam_id = {}",
-        TAG,
-        steam_id.raw()
+fn on_lobby_chat_msg(server: &Server, game: &mut Game, msg: LobbyChatMsg) {
+    println!("[{}] Lobby message: steam_id = {}", TAG, msg.user.raw());
+    let mut buffer = [0u8; 1024];
+    server.steam_client.matchmaking().get_lobby_chat_entry(
+        server.lobby_id.unwrap(),
+        msg.chat_id,
+        &mut buffer,
     );
-    server
-        .steam_client
-        .networking()
-        .accept_p2p_session(steam_id);
-
-    // Send the handshake
-    send_variant_p2p(
-        &server.sender_p2p_packet,
-        build_handshake_packet(server.steam_client.user().steam_id()),
-        P2pPacketTarget::All,
-        P2pChannel::GameState,
-        SendType::Reliable,
+    let chat_text = String::from_utf8_lossy(&buffer).into_owned();
+    println!(
+        "[{}] Lobby message from {}: {}",
+        TAG,
+        msg.user.raw(),
+        chat_text
     );
 }
