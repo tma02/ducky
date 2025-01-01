@@ -61,6 +61,9 @@ fn main() {
     let matchmaking = client.matchmaking();
     let networking_messages = client.networking_messages();
     let mut server = Server::new(client, sender_p2p_packet, config.clone());
+    server
+        .users
+        .insert(server.steam_client.user().steam_id().raw());
     config
         .ban_list
         .iter()
