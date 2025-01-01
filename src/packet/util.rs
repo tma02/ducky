@@ -156,6 +156,21 @@ pub fn build_weblobby_packet(member_list: &HashSet<u64>) -> VariantValue {
     VariantValue::Dictionary(packet)
 }
 
+pub fn build_user_joined_weblobby_packet(user_id: u64) -> VariantValue {
+    let mut packet = Dictionary::new();
+    packet.insert(
+        "type".to_owned(),
+        VariantValue::String("user_joined_weblobby".to_owned()),
+    );
+
+    packet.insert(
+        "user_id".to_owned(),
+        VariantValue::Int(user_id as i64),
+    );
+
+    VariantValue::Dictionary(packet)
+}
+
 pub fn send_variant_p2p(
     sender: &Sender<OutgoingP2pPacketRequest>,
     variant: VariantValue,

@@ -21,7 +21,7 @@ pub fn handle(server: &mut Server, _game: &mut Game, steam_id: SteamId, _packet:
     send_variant_p2p(
         &server.sender_p2p_packet,
         build_weblobby_packet(&server.users),
-        P2pPacketTarget::SteamId(steam_id),
+        P2pPacketTarget::All,
         P2pChannel::GameState,
         SendType::Reliable,
     );

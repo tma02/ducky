@@ -9,7 +9,7 @@ use config::Config;
 use game::Game;
 use packet::{
     on_receive_packet, on_send_packet,
-    util::{build_force_disconnect_player_packet, build_handshake_packet, send_variant_p2p},
+    util::{build_force_disconnect_player_packet, build_handshake_packet, build_user_joined_weblobby_packet, send_variant_p2p},
     OutgoingP2pPacketRequest, P2pChannel, P2pPacketTarget,
 };
 use server::Server;
@@ -78,7 +78,7 @@ fn main() {
         while let Ok(new_lobby_id) = receiver_create_lobby.try_recv() {
             // On lobby created
             server.set_lobby_id(new_lobby_id);
-            set_lobby_data(new_lobby_id, &matchmaking, &config);
+            set_lobby_data(new_lobby_id, &matchmaking, 1, &config);
         }
         while let Ok(update) = receiver_lobby_chat_update.try_recv() {
             on_lobby_chat_update(&server, &mut game, update);
@@ -96,7 +96,7 @@ fn main() {
         if lobby_update_timer.elapsed() > Duration::from_secs(LOBBY_UPDATE_INTERVAL_SEC) {
             if let Some(lobby_id) = server.lobby_id {
                 lobby_update_timer = Instant::now();
-                set_lobby_data(lobby_id, &matchmaking, &config);
+                set_lobby_data(lobby_id, &matchmaking, server.users.len(), &config);
             }
         }
 
@@ -188,7 +188,12 @@ fn init_lobby(
     });
 }
 
-fn set_lobby_data(lobby_id: LobbyId, matchmaking: &Matchmaking<ClientManager>, config: &Config) {
+fn set_lobby_data(
+    lobby_id: LobbyId,
+    matchmaking: &Matchmaking<ClientManager>,
+    user_count: usize,
+    config: &Config,
+) {
     println!(
         "[{}] Setting lobby fields: lobby_id = {}",
         TAG,
@@ -270,7 +275,7 @@ fn set_lobby_data(lobby_id: LobbyId, matchmaking: &Matchmaking<ClientManager>, c
             .join(","),
     );
     matchmaking.set_lobby_data(lobby_id, "cap", config.max_players.to_string().as_str());
-    matchmaking.set_lobby_data(lobby_id, "count", "1");
+    matchmaking.set_lobby_data(lobby_id, "count", user_count.to_string().as_str());
     matchmaking.set_lobby_data(lobby_id, "server_browser_value", "0");
     matchmaking.set_lobby_data(lobby_id, "lurefilter", "dedicated");
 }
@@ -364,6 +369,13 @@ fn on_lobby_chat_msg(server: &mut Server, msg: LobbyChatMsg) {
             .matchmaking()
             .send_lobby_chat_message(lobby_id, msg.as_bytes())
             .unwrap();
+        send_variant_p2p(
+            &server.sender_p2p_packet,
+            build_user_joined_weblobby_packet(steam_id_u64),
+            P2pPacketTarget::All,
+            P2pChannel::GameState,
+            SendType::Reliable,
+        );
     }
 }
 
