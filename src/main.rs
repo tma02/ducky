@@ -81,7 +81,7 @@ fn main() {
             set_lobby_data(new_lobby_id, &matchmaking, 1, &config);
         }
         while let Ok(update) = receiver_lobby_chat_update.try_recv() {
-            on_lobby_chat_update(&server, &mut game, update);
+            on_lobby_chat_update(&mut server, &mut game, update);
         }
         while let Ok(msg) = receiver_lobby_chat_msg.try_recv() {
             on_lobby_chat_msg(&mut server, msg);
@@ -280,7 +280,7 @@ fn set_lobby_data(
     matchmaking.set_lobby_data(lobby_id, "lurefilter", "dedicated");
 }
 
-fn on_lobby_chat_update(server: &Server, game: &mut Game, update: LobbyChatUpdate) {
+fn on_lobby_chat_update(server: &mut Server, game: &mut Game, update: LobbyChatUpdate) {
     if server
         .lobby_id
         .map(|lobby_id| lobby_id != update.lobby)
@@ -301,6 +301,7 @@ fn on_lobby_chat_update(server: &Server, game: &mut Game, update: LobbyChatUpdat
         );
         game.actor_manager
             .remove_all_actors_by_creator(&update.user_changed);
+        server.users.remove(&update.making_change.raw());
         // We don't close any sessions here since the rust bindings doesn't expose a way to do this.
         // The session should timeout anyway after a few minutes.
     } else if update.member_state_change == ChatMemberStateChange::Entered {
