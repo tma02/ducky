@@ -71,7 +71,7 @@ fn default_motd() -> String {
     "This lobby is powered by Ducky.\nType !help to see commands.".to_string()
 }
 fn default_game_version() -> String {
-    "1.11".to_string()
+    "1.12".to_string()
 }
 fn default_lobby_code() -> String {
     lobby_code()

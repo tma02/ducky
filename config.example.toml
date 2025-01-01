@@ -1,6 +1,6 @@
 name = "A Ducky Server"
 motd = "This lobby is powered by Ducky.\nType !help to see commands."
-game_version = "1.11"
+game_version = "1.12"
 lobby_code = "DUCKYY"
 max_players = 25
 unlisted = false
