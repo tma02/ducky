@@ -41,10 +41,17 @@ configuration](https://github.com/tma02/ducky/blob/master/src/config.rs#L12).
 ```toml
 name = "A Ducky Server"
 motd = "This lobby is powered by Ducky.\nType !help to see commands."
-game_version = "1.1"
+game_version = "1.12"
 lobby_code = "DUCKYY"
 max_players = 25
-code_only = true
-adult_only = false
+unlisted = false
+tag_talkative = false
+tag_quiet = false
+tag_grinding = false
+tag_chill = false
+tag_silly = false
+tag_hardcore = false
+tag_mature = false
+tag_modded = true
 ban_list = []
 ```
