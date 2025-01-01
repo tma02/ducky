@@ -104,7 +104,7 @@ pub fn on_send_packet(server: &Server, outgoing: OutgoingP2pPacketRequest) {
     }
 
     if let P2pPacketTarget::SteamId(steam_id) = outgoing.target {
-        server
+        let _ = server
             .steam_client
             .networking_messages()
             .send_message_to_user(
@@ -112,15 +112,14 @@ pub fn on_send_packet(server: &Server, outgoing: OutgoingP2pPacketRequest) {
                 outgoing.get_send_flags(),
                 &buffer,
                 channel_u32,
-            )
-            .unwrap();
+            );
     } else if let Some(lobby_id) = server.lobby_id {
         if let P2pPacketTarget::All = outgoing.target {
             for steam_id in server.steam_client.matchmaking().lobby_members(lobby_id) {
                 if steam_id == server.steam_client.user().steam_id() {
                     continue;
                 }
-                server
+                let _ = server
                     .steam_client
                     .networking_messages()
                     .send_message_to_user(
@@ -128,8 +127,7 @@ pub fn on_send_packet(server: &Server, outgoing: OutgoingP2pPacketRequest) {
                         outgoing.get_send_flags(),
                         &buffer,
                         channel_u32,
-                    )
-                    .unwrap();
+                    );
             }
         }
     }

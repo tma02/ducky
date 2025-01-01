@@ -148,7 +148,7 @@ fn init_steam_networking(
     client
         .networking_messages()
         .session_request_callback(move |request| {
-            sender_net_session.send(request).unwrap();
+            let _ = sender_net_session.send(request);
         });
 }
 
@@ -346,29 +346,26 @@ fn on_lobby_chat_msg(server: &mut Server, msg: LobbyChatMsg) {
     if chat_text.trim_matches(char::from(0)) == "$weblobby_join_request" {
         if server.ban_list.contains(&steam_id_u64) {
             let msg = format!("$weblobby_request_denied_deny-{}", steam_id_u64);
-            server
+            let _ = server
                 .steam_client
                 .matchmaking()
-                .send_lobby_chat_message(lobby_id, msg.as_bytes())
-                .unwrap();
+                .send_lobby_chat_message(lobby_id, msg.as_bytes());
             return;
         }
         if server.users.len() as u32 >= server.config.max_players {
             let msg = format!("$weblobby_request_denied_full-{}", steam_id_u64);
-            server
+            let _ = server
                 .steam_client
                 .matchmaking()
-                .send_lobby_chat_message(lobby_id, msg.as_bytes())
-                .unwrap();
+                .send_lobby_chat_message(lobby_id, msg.as_bytes());
             return;
         }
         server.users.insert(steam_id_u64);
         let msg = format!("$weblobby_request_accepted-{}", steam_id_u64);
-        server
+        let _ = server
             .steam_client
             .matchmaking()
-            .send_lobby_chat_message(lobby_id, msg.as_bytes())
-            .unwrap();
+            .send_lobby_chat_message(lobby_id, msg.as_bytes());
         send_variant_p2p(
             &server.sender_p2p_packet,
             build_user_joined_weblobby_packet(steam_id_u64),
