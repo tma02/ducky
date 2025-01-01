@@ -1,9 +1,6 @@
 use std::{
     fs, io,
-    sync::{
-        mpsc::{self, Sender},
-        Arc, Mutex,
-    },
+    sync::mpsc::{self, Sender},
     thread,
     time::{Duration, Instant},
 };
@@ -17,9 +14,8 @@ use packet::{
 };
 use server::Server;
 use steamworks::{
-    networking_messages::{NetworkingMessagesSessionRequest, SessionRequest},
-    ChatMemberStateChange, Client, ClientManager, LobbyChatMsg, LobbyChatUpdate, LobbyId,
-    LobbyType, Matchmaking, SendType,
+    networking_messages::SessionRequest, ChatMemberStateChange, Client, ClientManager,
+    LobbyChatMsg, LobbyChatUpdate, LobbyId, LobbyType, Matchmaking, SendType,
 };
 
 mod command;
