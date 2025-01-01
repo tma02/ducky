@@ -2,7 +2,7 @@ use serde::Deserialize;
 
 use crate::random::lobby_code;
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Config {
     #[serde(default = "default_name")]
     pub name: String,

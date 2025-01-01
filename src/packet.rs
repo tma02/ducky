@@ -3,7 +3,10 @@ use std::io::Read;
 use decode::decode_variant;
 use flate2::{bufread::GzEncoder, read::GzDecoder, Compression};
 use handler::resolve_handler;
-use steamworks::{SendType, SteamId};
+use steamworks::{
+    networking_types::{NetworkingIdentity, SendFlags},
+    SendType, SteamId,
+};
 use variant::VariantValue;
 
 use crate::{game::Game, Server};
@@ -25,7 +28,7 @@ pub enum P2pPacketTarget {
 }
 
 #[repr(i32)]
-#[derive(PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum P2pChannel {
     ActorUpdate = 0,
     ActorAction = 1,
@@ -55,6 +58,17 @@ pub struct OutgoingP2pPacketRequest {
     pub send_type: SendType,
 }
 
+impl OutgoingP2pPacketRequest {
+    pub fn get_send_flags(&self) -> SendFlags {
+        match self.send_type {
+            SendType::Reliable => SendFlags::RELIABLE,
+            SendType::Unreliable => SendFlags::UNRELIABLE,
+            SendType::UnreliableNoDelay => SendFlags::UNRELIABLE_NO_DELAY,
+            _ => SendFlags::UNRELIABLE,
+        }
+    }
+}
+
 pub fn on_receive_packet(
     server: &mut Server,
     game: &mut Game,
@@ -81,7 +95,7 @@ pub fn on_receive_packet(
 }
 
 pub fn on_send_packet(server: &Server, outgoing: OutgoingP2pPacketRequest) {
-    let channel_i32 = outgoing.channel as i32;
+    let channel_u32 = outgoing.channel as u32;
     let mut e: GzEncoder<&[u8]> = GzEncoder::new(outgoing.data.as_slice(), Compression::fast());
     let mut buffer = Vec::new();
     if let Err(e) = e.read_to_end(&mut buffer) {
@@ -90,24 +104,32 @@ pub fn on_send_packet(server: &Server, outgoing: OutgoingP2pPacketRequest) {
     }
 
     if let P2pPacketTarget::SteamId(steam_id) = outgoing.target {
-        server.steam_client.networking().send_p2p_packet_on_channel(
-            steam_id,
-            outgoing.send_type.clone(),
-            &buffer,
-            channel_i32,
-        );
+        server
+            .steam_client
+            .networking_messages()
+            .send_message_to_user(
+                NetworkingIdentity::new_steam_id(steam_id),
+                outgoing.get_send_flags(),
+                &buffer,
+                channel_u32,
+            )
+            .unwrap();
     } else if let Some(lobby_id) = server.lobby_id {
         if let P2pPacketTarget::All = outgoing.target {
             for steam_id in server.steam_client.matchmaking().lobby_members(lobby_id) {
                 if steam_id == server.steam_client.user().steam_id() {
                     continue;
                 }
-                server.steam_client.networking().send_p2p_packet_on_channel(
-                    steam_id,
-                    outgoing.send_type.clone(),
-                    &buffer,
-                    channel_i32,
-                );
+                server
+                    .steam_client
+                    .networking_messages()
+                    .send_message_to_user(
+                        NetworkingIdentity::new_steam_id(steam_id),
+                        outgoing.get_send_flags(),
+                        &buffer,
+                        channel_u32,
+                    )
+                    .unwrap();
             }
         }
     }

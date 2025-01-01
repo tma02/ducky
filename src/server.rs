@@ -2,10 +2,10 @@ use std::{collections::HashSet, sync::mpsc::Sender};
 
 use steamworks::{Client, LobbyId, SendType, SteamId};
 
-use crate::packet::{
+use crate::{config::Config, packet::{
     util::{build_message_packet, send_variant_p2p},
     OutgoingP2pPacketRequest, P2pChannel, P2pPacketTarget,
-};
+}};
 
 pub struct Server {
     pub steam_client: Client,
@@ -15,21 +15,24 @@ pub struct Server {
     // TODO: Holding ban_list here means we can't have per-lobby ban lists.
     /// A list of banned SteamIds as raw u64.
     pub ban_list: HashSet<u64>,
-    pub motd: String,
+    pub config: Config,
+    /// A list of users in the lobby.
+    pub users: HashSet<u64>,
 }
 
 impl Server {
     pub fn new(
         client: Client,
         sender_p2p_packet: Sender<OutgoingP2pPacketRequest>,
-        motd: String,
+        config: Config,
     ) -> Self {
         Self {
             steam_client: client,
             sender_p2p_packet,
             lobby_id: None,
             ban_list: HashSet::new(),
-            motd,
+            config,
+            users: HashSet::new(),
         }
     }
 
