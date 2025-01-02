@@ -175,6 +175,9 @@ impl SpawnManager {
         self.game_spawns.iter_mut().for_each(|(_, spawns)| {
             spawns.retain(|spawn_id| spawn_id != id);
         });
+        self.user_spawns.iter_mut().for_each(|(_, spawns)| {
+            spawns.retain(|spawn_id| spawn_id != id);
+        });
         self.spawn_timeouts.remove(id);
         actor_manager.despawn_host_actor(sender, id);
     }
