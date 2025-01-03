@@ -33,7 +33,7 @@ mod time;
 static TAG: &str = "ducky";
 static WF_APP_ID: u32 = 3146520;
 static TICK_MS: u128 = 1000 / 16; // 16 ticks/s
-static LOBBY_UPDATE_INTERVAL_SEC: u64 = 300; // 5 minutes
+static LOBBY_UPDATE_INTERVAL_SEC: u64 = 20; // 20 seconds
 
 fn main() {
     let server_epoch = Instant::now();
