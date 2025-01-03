@@ -203,7 +203,7 @@ impl SpawnManager {
             actor,
         );
         self.game_spawns
-            .entry(ActorType::Raincloud)
+            .entry(actor_type.clone())
             .or_insert(vec![])
             .push(id);
 
