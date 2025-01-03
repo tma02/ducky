@@ -256,7 +256,10 @@ fn set_lobby_data(
     matchmaking.set_lobby_data(
         lobby_id,
         "timestamp",
-        system_time_since_unix_epoch_seconds().to_string().as_str(),
+        // Add 10s to the timestamp so that the lobby doesn't expire before the next update.
+        (system_time_since_unix_epoch_seconds() + 10)
+            .to_string()
+            .as_str(),
     );
     matchmaking.set_lobby_data(
         lobby_id,
