@@ -1,5 +1,3 @@
-use std::time::{SystemTime, UNIX_EPOCH};
-
 use steamworks::{SendType, SteamId};
 
 use crate::{
@@ -9,6 +7,7 @@ use crate::{
         variant::{Dictionary, VariantValue},
         P2pChannel, P2pPacketTarget,
     },
+    time::system_time_since_unix_epoch_seconds_float,
     Server,
 };
 
@@ -20,14 +19,7 @@ pub fn handle(server: &mut Server, _game: &mut Game, steam_id: SteamId, _packet:
     );
     response.insert(
         "time".to_owned(),
-        VariantValue::String(
-            // TODO: Move getting system time into a util? This is currently the only usage though.
-            SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_secs_f64()
-                .to_string(),
-        ),
+        VariantValue::String(system_time_since_unix_epoch_seconds_float()),
     );
     response.insert(
         "from".to_owned(),

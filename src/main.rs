@@ -9,7 +9,10 @@ use config::Config;
 use game::Game;
 use packet::{
     on_receive_packet, on_send_packet,
-    util::{build_force_disconnect_player_packet, build_handshake_packet, build_user_joined_weblobby_packet, send_variant_p2p},
+    util::{
+        build_force_disconnect_player_packet, build_handshake_packet,
+        build_user_joined_weblobby_packet, send_variant_p2p,
+    },
     OutgoingP2pPacketRequest, P2pChannel, P2pPacketTarget,
 };
 use server::Server;
@@ -17,6 +20,7 @@ use steamworks::{
     networking_messages::SessionRequest, ChatMemberStateChange, Client, ClientManager,
     LobbyChatMsg, LobbyChatUpdate, LobbyId, LobbyType, Matchmaking, SendType,
 };
+use time::system_time_since_unix_epoch_seconds;
 
 mod command;
 mod config;
@@ -24,6 +28,7 @@ mod game;
 mod packet;
 mod random;
 mod server;
+mod time;
 
 static TAG: &str = "ducky";
 static WF_APP_ID: u32 = 3146520;
@@ -248,7 +253,11 @@ fn set_lobby_data(
         &Config::get_lobby_data_for_bool(config.tag_modded),
     );
     matchmaking.set_lobby_data(lobby_id, "request", "false");
-    matchmaking.set_lobby_data(lobby_id, "timestamp", "2000000000");
+    matchmaking.set_lobby_data(
+        lobby_id,
+        "timestamp",
+        system_time_since_unix_epoch_seconds().as_str(),
+    );
     matchmaking.set_lobby_data(
         lobby_id,
         "type",
@@ -278,6 +287,8 @@ fn set_lobby_data(
     matchmaking.set_lobby_data(lobby_id, "count", user_count.to_string().as_str());
     matchmaking.set_lobby_data(lobby_id, "server_browser_value", "0");
     matchmaking.set_lobby_data(lobby_id, "lurefilter", "dedicated");
+
+    let _ = matchmaking.send_lobby_chat_message(lobby_id, "^^duckyy_heartbeat".as_bytes());
 }
 
 fn on_lobby_chat_update(server: &mut Server, game: &mut Game, update: LobbyChatUpdate) {
@@ -289,28 +300,24 @@ fn on_lobby_chat_update(server: &mut Server, game: &mut Game, update: LobbyChatU
     {
         return;
     }
+    println!(
+        "[{}] Lobby update: user_changed = {}, change = {:?}, making_change = {}",
+        TAG,
+        update.user_changed.raw(),
+        update.member_state_change,
+        update.making_change.raw(),
+    );
     if update.member_state_change == ChatMemberStateChange::Left
         || update.member_state_change == ChatMemberStateChange::Disconnected
         || update.member_state_change == ChatMemberStateChange::Kicked
         || update.member_state_change == ChatMemberStateChange::Banned
     {
-        println!(
-            "[{}] User left lobby: steam_id = {}",
-            TAG,
-            update.user_changed.raw()
-        );
         game.actor_manager
             .remove_all_actors_by_creator(&update.user_changed);
         server.users.remove(&update.making_change.raw());
         // We don't close any sessions here since the rust bindings doesn't expose a way to do this.
         // The session should timeout anyway after a few minutes.
     } else if update.member_state_change == ChatMemberStateChange::Entered {
-        println!(
-            "[{}] User joined lobby: steam_id = {}",
-            TAG,
-            update.user_changed.raw()
-        );
-
         if server.banned_steam_id(&update.user_changed) {
             println!(
                 "[{}] Sending force_disconnect_player packet to block P2P on players: steam_id = {}",
