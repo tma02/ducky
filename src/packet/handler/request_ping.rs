@@ -7,7 +7,7 @@ use crate::{
         variant::{Dictionary, VariantValue},
         P2pChannel, P2pPacketTarget,
     },
-    time::system_time_since_unix_epoch_seconds_float,
+    time::system_time_since_unix_epoch_seconds_f64,
     Server,
 };
 
@@ -19,7 +19,7 @@ pub fn handle(server: &mut Server, _game: &mut Game, steam_id: SteamId, _packet:
     );
     response.insert(
         "time".to_owned(),
-        VariantValue::String(system_time_since_unix_epoch_seconds_float()),
+        VariantValue::String(system_time_since_unix_epoch_seconds_f64().to_string()),
     );
     response.insert(
         "from".to_owned(),

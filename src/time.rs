@@ -1,17 +1,15 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
-pub fn system_time_since_unix_epoch_seconds() -> String {
+pub fn system_time_since_unix_epoch_seconds() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_secs()
-        .to_string()
 }
 
-pub fn system_time_since_unix_epoch_seconds_float() -> String {
+pub fn system_time_since_unix_epoch_seconds_f64() -> f64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_secs_f64()
-        .to_string()
 }

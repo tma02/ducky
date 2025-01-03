@@ -256,7 +256,7 @@ fn set_lobby_data(
     matchmaking.set_lobby_data(
         lobby_id,
         "timestamp",
-        system_time_since_unix_epoch_seconds().as_str(),
+        system_time_since_unix_epoch_seconds().to_string().as_str(),
     );
     matchmaking.set_lobby_data(
         lobby_id,
